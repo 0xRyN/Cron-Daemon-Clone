@@ -96,7 +96,7 @@ $ cassini -l
 ```
 
 **Remarque** : les options de la ligne de commande devront impérativement
-inclure celles définies dans [cassini.c](cassini.c) et avoir exactement
+inclure celles définies dans [cassini.c](src/cassini.c) et avoir exactement
 le comportement demandé, y compris le format de sortie, à des fins de
 test de vos projets. Vous êtes bien entendu libres d'ajouter d'autres
 options si vous le souhaitez, par exemple pour produire un autre format
@@ -115,6 +115,9 @@ incomplètes).
 Un jeu de tests est fourni pour s'assurer du strict respect du protocole
 de communication. Lancer le script `run-cassini-tests.sh` pour effectuer
 ces tests.
+
+Pensez également à vérifier la bonne gestion mémoire de vos programmes,
+par exemple avec l'outil `valgrind`.
 
 
 ## Modalités de réalisation
@@ -153,6 +156,10 @@ sûr vous n'êtes notés que sur ce que vous avez effectivement produit.
 Donc si vous copiez l'intégralité de votre projet en le spécifiant
 clairement, vous aurez quand même 0 (mais vous éviterez une demande de
 convocation de la section disciplinaire).
+
+Pour toute question auxquelle ce document ne répond pas, merci d'utiliser
+le salon `questions-projet` du [serveur
+discord](https://discord.gg/7ArJtu8Xnv).
 
 
 ## Modalités de rendu

@@ -2,16 +2,14 @@ Protocole de communication `saturnd`-`cassini`
 =============================================
 
 
-Format des messages
-===================
-
 Chaque message est composé d'une succession de champs concaténés ayant chacun un type :
 
 
 Les types de champs
--------------------
+===================
 
-### Les types entiers
+
+#### Les types entiers
 
 `uint8`, `uint16`, `uint32`, `uint64` : entiers non signés sur 1, 2, 4 et
 8 octets respectivement, en convention big-endian. 
@@ -24,13 +22,13 @@ portabilité sur tous les systèmes POSIX; vous pouvez donc utiliser les
 fonctions de conversion disponibles sous linux et listées dans `man 3
 endian`_
 
-### Le type `string`
+#### Le type `string`
 
 Un sous-champ de type `uint32` contenant la longueur `L` de la chaîne
 (sans le 0 terminal), suivi des `L` octets correspondant au contenu de la
 chaîne.
 
-### Le type `timing`
+#### Le type `timing`
 
 Décrit un ensemble de minutes (comme les 5 premiers champs d'une ligne de crontab). Composé d'une
 succession de 3 sous-champs :
@@ -41,20 +39,20 @@ MINUTES <uint64>, HOURS <uint32>, DAYSOFWEEK <uint16>
 
 Chacun des sous-champs est à voir comme un tableau de bits. 
 
-`MINUTES` : Bit de poids faible (n°0) = minute 0, ..., bit n°59 = minute 59.
+`MINUTES` : bit de poids faible (n°0) = minute 0, ..., bit n°59 = minute 59.
   
  - Exemple : 0x00002000000007F0 = de la minute 4 à la minute 10, puis à la minute 45
              (équivalent dans crontab : 4-10,45)
 
-`HOURS` : Bit n°0 = heure 0, ..., bit n°23 = heure 23
+`HOURS` : bit n°0 = heure 0, ..., bit n°23 = heure 23
 
-`DAYSOFWEEK` : Bit n°0 = dimanche, ..., bit n°6 = samedi.
+`DAYSOFWEEK` : bit n°0 = dimanche, ..., bit n°6 = samedi.
  
  - Exemple : 0x5C (en binaire : 01011100) = du mardi au jeudi, et le samedi
              (équivalent dans crontab : 2-4,6)
 
 
-### Le type `commandline`
+#### Le type `commandline`
 
 ```
 ARGC <uint32>, ARGV[0] <string>, ..., ARGV[ARGC-1] <string>
@@ -64,7 +62,7 @@ ARGC <uint32>, ARGV[0] <string>, ..., ARGV[ARGC-1] <string>
 
 
 Format des requêtes (messages client -> démon)
--------------------------------------------------
+==============================================
 
 Chaque requête commence par un champ `OPCODE` de type `uint16`, dont la
 valeur indique quelle opération est demandée au serveur :
@@ -80,19 +78,19 @@ valeur indique quelle opération est demandée au serveur :
  
 Le format de la requête dépend de l'opération :
 
-### Requête LIST
+#### Requête LIST
 
 ```
 OPCODE='LS' <uint16>
 ```
 
-### Requête CREATE
+#### Requête CREATE
 
 ```
 OPCODE='CR' <uint16>, TIMING <timing>, COMMANDLINE <commandline>
 ```
 
-### Requête REMOVE
+#### Requête REMOVE
 
 ```
 OPCODE='RM' <uint16>, TASKID <uint64>
@@ -100,25 +98,25 @@ OPCODE='RM' <uint16>, TASKID <uint64>
 
 `TASKID` indique l'identifiant de la tâche à supprimer.
 
-### Requête TIMES_EXITCODES
+#### Requête TIMES_EXITCODES
 
 ```
 OPCODE='TX' <uint16>, TASKID <uint64>
 ```
 
-### Requête STDOUT
+#### Requête STDOUT
 
 ```
 OPCODE='SO' <uint16>, TASKID <uint64>
 ```
 
-### Requête STDERR
+#### Requête STDERR
 
 ```
 OPCODE='SE' <uint16>, TASKID <uint64>
 ```
 
-### Requête TERMINATE
+#### Requête TERMINATE
 
 ```
 OPCODE='TM' <uint16>
@@ -127,7 +125,7 @@ OPCODE='TM' <uint16>
 
 
 Format des réponses (messages démon -> client)
-------------------------------------------------
+==============================================
 
 Chaque réponse commence par un champ `REPTYPE` de type `uint16` :
  - 0x4f4b ('OK') : OK -- la requête s'est exécutée normalement
@@ -137,7 +135,7 @@ Le format de la réponse dépend du type de réponse (REPTYPE) et de la
 requête à laquelle elle répond :
 
 
-### Réponse à LIST
+#### Réponse à LIST
 
 Seule une réponse OK est possible :
 
@@ -149,7 +147,7 @@ TASK[N-1].TASKID <uint64>, TASK[N-1].TIMING <timing>, TASK[N-1].COMMANDLINE <com
 ```
 
 
-### Réponse à CREATE
+#### Réponse à CREATE
 
 Seule une réponse OK est possible :
 
@@ -162,17 +160,17 @@ identifiant est unique. Les identifiants des tâches supprimées ne sont
 pas réutilisés.
 
 
-### Réponse à REMOVE
+#### Réponse à REMOVE
 
 Les réponses OK et ERROR sont possibles :
 
-#### Réponse OK
+##### Réponse OK
 
 ```
 REPTYPE='OK' <uint16>
 ```
 
-#### Réponse ERROR
+##### Réponse ERROR
 
 ```
 REPTYPE='ER' <uint16>, ERRCODE <uint16>
@@ -182,11 +180,11 @@ La seule valeur possible pour ERRCODE est :
  - 0x4e46 ('NF') : il n'existe aucune tâche avec cet identifiant
  
 
-### Réponse à TIMES_EXITCODE
+#### Réponse à TIMES_EXITCODE
 
 Les réponses OK et ERROR sont possibles :
 
-#### Réponse OK
+##### Réponse OK
 
 ```
 REPTYPE='OK' <uint16>, NBRUNS=N <uint32>
@@ -203,7 +201,7 @@ Chaque champ `EXITCODE` contient :
    depuis `main()` (cf `man 2 wait`),
  - soit la valeur 0xFFFF, dans tous les autres cas.
 
-#### Réponse ERROR
+##### Réponse ERROR
 
 ```
 REPTYPE='ER' <uint16>, ERRCODE <uint16>
@@ -213,17 +211,17 @@ La seule valeur possible pour ERRCODE est :
  - 0x4e46 ('NF') : il n'existe aucune tâche avec cet identifiant
 
 
-### Réponse à STDOUT et STDERR
+#### Réponse à STDOUT et STDERR
 
 Les réponses OK et ERROR sont possibles :
 
-#### Réponse OK
+##### Réponse OK
 
 ```
 REPTYPE='OK' <uint16>, OUTPUT <string>
 ```
 
-#### Réponse ERROR
+##### Réponse ERROR
 
 ```
 REPTYPE='ER' <uint16>, ERRCODE <uint16>
@@ -234,7 +232,7 @@ Les valeurs possibles pour ERRCODE sont :
  - 0x4e52 ('NR') : la tâche n'a pas encore été exécutée au moins une fois
 
 
-### Réponse à TERMINATE
+#### Réponse à TERMINATE
 
 Seule une réponse OK est possible :
 
@@ -245,13 +243,13 @@ REPTYPE='OK' <uint16>
 
 
 Exemple
--------
+=======
 
 Supposons par exemple que le client demande « exécuter la commande `echo test-1` tous les
 mercredis à 9h00 et 14h00 » et que le démon réponde « la tâche a été crée avec l'identifiant 26
 (0x1A) ». Voici les messages que le client et le démon s'échangeraient :
 
-### Requête du client
+#### Requête du client
 
 Telle que vue avec `hexdump -C` :
 
@@ -268,7 +266,7 @@ Découpée en champs et sous-champs :
 OPCODE                 : 43 52                     |CR|
 
 TIMING.MINUTES         : 00 00 00 00 00 00  00 01  |........|
-TIMING.HOURS           : 00 00 42 00               |...B.|
+TIMING.HOURS           : 00 00 42 00               |..B.|
 TIMING.DAYSOFWEEK      : 08                        |.|
 
 COMMAND.ARGC           : 00 00 00 02               |....|
@@ -279,7 +277,7 @@ COMMAND.ARGV[1].DATA   : 74 65 72 74 2d 31         |test-1|
 ```
 
 
-### Réponse du serveur
+#### Réponse du serveur
 
 Telle que vue avec `hexdump -C` :
 

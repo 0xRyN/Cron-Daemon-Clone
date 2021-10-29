@@ -11,6 +11,8 @@ Ce dépôt contient :
   - un [script de test](run-cassini-tests.sh) du client (`cassini`), et
     le jeu de [tests](tests) correspondant, 
 
-  - ...
+  - quelques fichiers sources pour vous aider à démarrer.
 
+Par ailleurs, nous avons ouvert un [serveur
+discord](https://discord.gg/7ArJtu8Xnv) avec un salon dédié aux questions concernant le projet.
 
