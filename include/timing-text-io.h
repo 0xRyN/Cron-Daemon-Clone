@@ -17,8 +17,8 @@ int timing_from_strings(struct timing * dest, char * minutes_str, char * hours_s
    case of failure, returns 0. */
 
 int timing_string_from_timing(char * dest, const struct timing * timing);
-/* Writes a text repressentation of timing in the bufffer pointed to by dest, and adds a trailing
-   '\0'. The buffer must be able to hold at least TIMING_TEXT_MIN_BUFFERSIZE charcters. Returns the
+/* Writes a text representation of timing in the buffer pointed to by dest, and adds a trailing
+   '\0'. The buffer must be able to hold at least TIMING_TEXT_MIN_BUFFERSIZE characters. Returns the
    number of characters written, *excluding* the trailing '\0'. */
 
 

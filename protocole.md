@@ -1,7 +1,8 @@
 Protocole de communication `saturnd`-`cassini`
 =============================================
 
-
+Les deux processus communiquent par envoi de messages sur deux tubes
+nommés, le _tube de requête_ et le _tube de réponse_.
 Chaque message est composé d'une succession de champs concaténés ayant chacun un type :
 
 
