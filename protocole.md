@@ -35,7 +35,7 @@ Décrit un ensemble de minutes (comme les 5 premiers champs d'une ligne de cront
 succession de 3 sous-champs :
 
 ```
-MINUTES <uint64>, HOURS <uint32>, DAYSOFWEEK <uint16>
+MINUTES <uint64>, HOURS <uint32>, DAYSOFWEEK <uint8>
 ```
 
 Chacun des sous-champs est à voir comme un tableau de bits. 
