@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
 
     // ouverture des pipe, request et response
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
-    int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
+    int RES_FD = open(RES_PIPE_PATH, O_RDWR);
     
     //On vérifie qu'il n'y ait pas d'erreur avec les pipes
     if (REQ_FD == -1) {
@@ -136,16 +136,26 @@ int main(int argc, char* argv[]) {
         perror("Error when opening response pipe");
         goto error;
     }
-    uint16_t op = htobe16(operation);
+    /*uint16_t op = htobe16(operation);
     int w = write(REQ_FD, &op, sizeof(uint16_t));
     if (w == -1) {
         perror("Error when writing to request pipe");
         goto error;
-    }
+    }*/
 
     // les différentes opérations appelées dans le premier switch case (opt)
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS:{
+            
+            uint16_t op = htobe16(operation);
+            int w = write(REQ_FD, &op, sizeof(uint16_t));
+            if (w == -1) {
+                perror("Error when writing to request pipe");
+                goto error;
+            }
+            
+            //creat("testo",O_RDWR);
+
             uint16_t reptype;
 
             read(RES_FD,&reptype,2);
@@ -157,47 +167,60 @@ int main(int argc, char* argv[]) {
             uint32_t nbtasks;
 
 
-            read(RES_FD,&nbtasks,4);
+            read(RES_FD,&nbtasks,sizeof(nbtasks));
+            uint64_t tId;
+            uint64_t minutes;
+            uint32_t hours;
+            uint8_t day;
+            uint32_t argcd;
+            struct cstring* argvd;
             if (htobe32(nbtasks) > 0){
-                for (uint32_t i = 0; i < nbtasks; i++)
-                {
+                
+                
                     //printf("testtest");
-                    uint64_t tId;
-                    read(RES_FD,&tId,8);
-                    printf("%li:",htobe64(tId));
-
-                    uint64_t minutes;
-                    read(RES_FD,&minutes,8);
-                    printf("%li: ",htobe64(minutes));
                     
-                    uint32_t hours;
+                    read(RES_FD,&tId,8);
+                    printf("%li: ",htobe64(tId));
+
+                    
+                    read(RES_FD,&minutes,8);
+                    printf("%li ",htobe64(minutes));
+                    
+                    
                     read(RES_FD,&hours,4);
-                    printf("%i: ",htobe32(hours));
+                    printf("%i ",htobe32(hours));
 
-                    uint8_t day;
+                    
                     read(RES_FD,&day,1);
-                    printf("%i: ",day);
+                    printf("%i ",day);
 
-                    uint32_t argcd;
+                   
                     read(RES_FD,&argcd,4);
-                    struct cstring* argvd;
+                    
                     read(RES_FD,&argvd,4);
-                    for (uint32_t i = 0; i < argcd; i++)
+                    for (uint32_t j = 0; j < argcd; j++)
                     {
-                        uint32_t length;
-                        read(RES_FD,&length,4);
-                        char* value;
-                        read(RES_FD,&value,4);
-                        printf("%s",value);
+                        //uint32_t length;
+                        //read(RES_FD,&length,4);
+                        //char* value;
+                        //read(RES_FD,&value,4);
+                        //printf("%s","test");
                     }
-                }
-            }
-            
-            
+                
+                
+            }  
+            printf(0);
             break;
         }
 
         case CLIENT_REQUEST_CREATE_TASK: {
+            uint16_t op = htobe16(operation);
+            int w = write(REQ_FD, &op, sizeof(uint16_t));
+            if (w == -1) {
+                perror("Error when writing to request pipe");
+                goto error;
+            }
+
             struct timing* time = malloc(sizeof(struct timing));
             struct command* cmd = malloc(sizeof(struct command));
             //appelle de la fonction command_from_args, écrite dans command.c, et on verifie qu'il n'y ait pas d'erreur 
