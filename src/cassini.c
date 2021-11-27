@@ -17,6 +17,8 @@
 #define REQ_PIPE_PATH "./run/pipes/saturnd-request-pipe"
 #define RES_PIPE_PATH "./run/pipes/saturnd-reply-pipe"
 
+
+//liste des options et commandes de cassini 
 const char usage_info[] =
     "\
    usage: cassini [OPTIONS] -l -> list all tasks\n\
@@ -50,6 +52,7 @@ int main(int argc, char* argv[]) {
 
     int opt;
     char* strtoull_endp;
+    //actions pour les differents arguments (heure, minute, afficher toutes les taches etc ..)
     while ((opt = getopt(argc, argv, "hlcqm:H:d:p:r:x:o:e:")) != -1) {
         switch (opt) {
             case 'm':
@@ -119,8 +122,11 @@ int main(int argc, char* argv[]) {
     // | TODO |
     // --------
 
+    // ouverture des pipe, request et response
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
     int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
+    
+    //On vérifie qu'il n'y ait pas d'erreur avec les pipes
     if (REQ_FD == -1) {
         perror("Error when opening request pipe");
         goto error;
@@ -137,6 +143,7 @@ int main(int argc, char* argv[]) {
         goto error;
     }
 
+    // les différentes opérations appelées dans le premier switch case (opt)
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS:
             break;
@@ -144,10 +151,12 @@ int main(int argc, char* argv[]) {
         case CLIENT_REQUEST_CREATE_TASK: {
             struct timing* time = malloc(sizeof(struct timing));
             struct command* cmd = malloc(sizeof(struct command));
+            //appelle de la fonction command_from_args, écrite dans command.c, et on verifie qu'il n'y ait pas d'erreur 
             if (command_from_args(cmd, argc, argv, optind) == 1) {
                 perror("Command_from_args didn't work");
                 goto error;
             };
+            //appelle de la fonction timing_from_string, écrite dans timing-text-io.c, et on verifie qu'il n'y ait pas d'erreur 
             if (timing_from_strings(time, minutes_str, hours_str,
                                     daysofweek_str) == -1) {
                 perror("Could not use timing_from_strings");
