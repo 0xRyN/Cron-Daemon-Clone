@@ -145,8 +145,57 @@ int main(int argc, char* argv[]) {
 
     // les différentes opérations appelées dans le premier switch case (opt)
     switch (operation) {
-        case CLIENT_REQUEST_LIST_TASKS:
+        case CLIENT_REQUEST_LIST_TASKS:{
+            uint16_t reptype;
+
+            read(RES_FD,&reptype,2);
+            if (htobe16(reptype) == 0x4552){
+                printf("1");
+                goto error;
+            }
+
+            uint32_t nbtasks;
+
+
+            read(RES_FD,&nbtasks,4);
+            if (htobe32(nbtasks) > 0){
+                for (uint32_t i = 0; i < nbtasks; i++)
+                {
+                    //printf("testtest");
+                    uint64_t tId;
+                    read(RES_FD,&tId,8);
+                    printf("%li:",htobe64(tId));
+
+                    uint64_t minutes;
+                    read(RES_FD,&minutes,8);
+                    printf("%li: ",htobe64(minutes));
+                    
+                    uint32_t hours;
+                    read(RES_FD,&hours,4);
+                    printf("%i: ",htobe32(hours));
+
+                    uint8_t day;
+                    read(RES_FD,&day,1);
+                    printf("%i: ",day);
+
+                    uint32_t argcd;
+                    read(RES_FD,&argcd,4);
+                    struct cstring* argvd;
+                    read(RES_FD,&argvd,4);
+                    for (uint32_t i = 0; i < argcd; i++)
+                    {
+                        uint32_t length;
+                        read(RES_FD,&length,4);
+                        char* value;
+                        read(RES_FD,&value,4);
+                        printf("%s",value);
+                    }
+                }
+            }
+            
+            
             break;
+        }
 
         case CLIENT_REQUEST_CREATE_TASK: {
             struct timing* time = malloc(sizeof(struct timing));
@@ -186,7 +235,7 @@ int main(int argc, char* argv[]) {
 
             uint16_t reptype;
 
-            read(RES_FD, &reptype, 4);
+            read(RES_FD, &reptype, 2);
             if (htobe16(reptype) == 0x4f4b)
                 printf("0");
             else {
