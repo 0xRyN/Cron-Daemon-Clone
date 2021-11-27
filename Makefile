@@ -7,10 +7,13 @@ EXEC = cassini
 all: $(EXEC)
 
 $(EXEC) : $(OBJ)
-	$(CC) -o src/$@ $(OBJ) && ./src/$(EXEC)
+	$(CC) -o $@ $(OBJ)
 
 %.o : %.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean : 
-	rm -rf src/*.o src/$(EXEC)
+	rm -rf src/*.o ./$(EXEC)
+
+distclean : 
+	rm -rf src/*.o ./$(EXEC)
