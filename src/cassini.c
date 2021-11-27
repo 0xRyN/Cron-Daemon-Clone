@@ -166,8 +166,14 @@ int main(int argc, char* argv[]) {
                 write(REQ_FD, cmd->argv[i].value, strlen(cmd->argv[i].value));
             }
 
-            free(time);
+            // BEGIN - FREEING ALL POINTERS
+            for (unsigned int i = 0; i < cmd->argc; i++) {
+                free(cmd->argv[i].value);
+            }
+            free(cmd->argv);
             free(cmd);
+            free(time);
+            // END - FREEING ALL POINTERS
 
             uint16_t reptype;
 
