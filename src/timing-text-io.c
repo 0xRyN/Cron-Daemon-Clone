@@ -1,7 +1,6 @@
 #include "timing-text-io.h"
 
-/* Writes the result in *dest. In case of success, returns the number of
-   characters read (>0). In case of failure, returns 0. */
+/* Writes the result in *dest. In case of success, returns 0. In case of failure, returns -1. */
 int timing_from_strings(struct timing* dest, char* minutes_str, char* hours_str,
                         char* daysofweek_str) {
     uint64_t field;

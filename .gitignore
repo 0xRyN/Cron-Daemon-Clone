@@ -2,3 +2,4 @@ saturnd
 cassini
 run/
 *.dSYM
+*.o
