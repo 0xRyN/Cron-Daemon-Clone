@@ -169,21 +169,31 @@ int main(int argc, char* argv[]) {
             // If tasks exists, display them in the protocol's format
             if (nbtasks > 0) {
                 for (uint32_t i = 0; i < nbtasks; i++) {
+                    // Allocate a struct for timing
+                    struct timing* time = malloc(13);
+
                     // Read and print the taskid
                     read(RES_FD, &res_taskid, 8);
                     printf("%li: ", be64toh(res_taskid));
 
                     // Read and print the minutes
                     read(RES_FD, &minutes, 8);
-                    printf("%s ", minutes_str);
 
                     // Read and print the hours
                     read(RES_FD, &hours, 4);
-                    printf("%s ", hours_str);
 
                     // Read and print the days
                     read(RES_FD, &day, 1);
-                    printf("%s ", daysofweek_str);
+
+                    // Perform the necessary conversions
+                    time->minutes = be64toh(minutes);
+                    time->hours = be32toh(hours);
+                    time->daysofweek = day;
+
+                    // Transform the timing to a string
+                    char str[TIMING_TEXT_MIN_BUFFERSIZE];
+                    timing_string_from_timing(str, time);
+                    printf("%s ", str);
 
                     // Read the number of commands in "commandline" type
                     read(RES_FD, &command_argc, 4);
