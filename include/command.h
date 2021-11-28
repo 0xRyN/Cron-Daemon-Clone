@@ -5,8 +5,8 @@
 
 #include "./cstring.h"
 
-#define n 10
-
+// The "commandline" type. It is called "command" because it is more concise and
+// easier to read
 struct command {
     uint32_t argc;
     struct cstring* argv;

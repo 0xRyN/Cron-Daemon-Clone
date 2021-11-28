@@ -17,8 +17,7 @@
 #define REQ_PIPE_PATH "./run/pipes/saturnd-request-pipe"
 #define RES_PIPE_PATH "./run/pipes/saturnd-reply-pipe"
 
-
-//list of cassini options and commands 
+// list of cassini options and commands
 const char usage_info[] =
     "\
    usage: cassini [OPTIONS] -l -> list all tasks\n\
@@ -52,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     int opt;
     char* strtoull_endp;
-    //actions for different arguments (hour, minute, show all tasks etc.)
+    // Parsing command line arguments...
     while ((opt = getopt(argc, argv, "hlcqm:H:d:p:r:x:o:e:")) != -1) {
         switch (opt) {
             case 'm':
@@ -110,23 +109,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // struct command cmd;
-    // if (command_from_args(&cmd, argc, argv, optind) == 1) {
-    //     perror("Command_from_args didn't work");
-    //     goto error;
-    // };
-    // printf("Struct contains %i commands\n", cmd.argc);
-    // printf("First one is : %i\n", cmd.argv[1].length);
-
     // --------
     // | TODO |
     // --------
 
-    //opening of pipes, requests and responses
+    // Open the two pipes, request and response, in WRITEONLY and READONLY
+    // respectively
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
-    int RES_FD = open(RES_PIPE_PATH, O_RDWR);
-    
-    //We check that there are no errors with the pipes
+    int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
+
+    // We will always send an operation to request. This is why
+    // it is out of the switch
+    uint16_t op = htobe16(operation);
+    int w = write(REQ_FD, &op, sizeof(uint16_t));
+    if (w == -1) {
+        perror("Error when writing to request pipe");
+        goto error;
+    }
+
+    // We check that there are no errors with the pipes
     if (REQ_FD == -1) {
         perror("Error when opening request pipe");
         goto error;
@@ -136,126 +137,131 @@ int main(int argc, char* argv[]) {
         perror("Error when opening response pipe");
         goto error;
     }
-    /*uint16_t op = htobe16(operation);
-    int w = write(REQ_FD, &op, sizeof(uint16_t));
-    if (w == -1) {
-        perror("Error when writing to request pipe");
-        goto error;
-    }*/
 
-    // the different operations called in the first switch case (opt)
+    // Main switch :
+    // This is to know which task operation we assigned to Cassini.
+    // Each operation will have different requests / responses.
     switch (operation) {
-        case CLIENT_REQUEST_LIST_TASKS:{
-            
-            uint16_t op = htobe16(operation);
-            int w = write(REQ_FD, &op, sizeof(uint16_t));
-            if (w == -1) {
-                perror("Error when writing to request pipe");
-                goto error;
-            }
-            
-            //creat("testo",O_RDWR);
-
+        case CLIENT_REQUEST_LIST_TASKS: {
+            // We sent the operation to the daemon. We will now read the
+            // response...
             uint16_t reptype;
+            read(RES_FD, &reptype, 2);
 
-            read(RES_FD,&reptype,2);
-            if (htobe16(reptype) == 0x4552){
-                printf("1");
+            // Checking if the daemon response is OK...
+            if (htobe16(reptype) == 0x4552) {
+                perror(
+                    "CLIENT_REQUEST_LIST_TASKS : Daemon responded with an "
+                    "error code, exiting...");
                 goto error;
             }
 
-            uint32_t nbtasks;
+            uint32_t nbtasks;       // Number of tasks
+            uint64_t res_taskid;    // Task id
+            uint64_t minutes;       // Timing.minutes
+            uint32_t hours;         // Timing.hours
+            uint8_t day;            // Timing.daysOfWeek
+            uint32_t command_argc;  // Command.argc
 
+            read(RES_FD, &nbtasks, sizeof(nbtasks));
+            nbtasks = htobe32(nbtasks);
 
-            read(RES_FD,&nbtasks,sizeof(nbtasks));
-            uint64_t tId;
-            uint64_t minutes;
-            uint32_t hours;
-            uint8_t day;
-            uint32_t argcd;
-            int t = htobe32(nbtasks);
-            struct cstring* cs;
-            if (t > 0){
-                
-                
-                for (uint32_t i = 0; i < t; i++)
-                {
-                    read(RES_FD,&tId,8);
-                    printf("%li: ",htobe64(tId));
+            // If tasks exists, display them in the protocol's format
+            if (nbtasks > 0) {
+                for (uint32_t i = 0; i < nbtasks; i++) {
+                    // Read and print the taskid
+                    read(RES_FD, &res_taskid, 8);
+                    printf("%li: ", htobe64(res_taskid));
 
-                    
-                    read(RES_FD,&minutes,8);
-                    printf("%s ",minutes_str);
-                    
-                    
-                    read(RES_FD,&hours,4);
-                    printf("%s ",hours_str);
+                    // Read and print the minutes
+                    read(RES_FD, &minutes, 8);
+                    printf("%s ", minutes_str);
 
-                    
-                    read(RES_FD,&day,1);
-                    printf("%s ",daysofweek_str);
+                    // Read and print the hours
+                    read(RES_FD, &hours, 4);
+                    printf("%s ", hours_str);
 
-                   
-                    read(RES_FD,&argcd,4);
-                    //printf("%li",htobe32(argcd));
-                    for (int i = 0; i < htobe32(argcd); i++)
-                    {
-                        int l;
-                        read(RES_FD,&l,4);
-                        //printf(" %li",htobe32(l));
-                        l = htobe32(l);
-                        char val[6];
-                        read(RES_FD,val,l);
-                        printf("%s ",val);
+                    // Read and print the days
+                    read(RES_FD, &day, 1);
+                    printf("%s ", daysofweek_str);
+
+                    // Read the number of commands in "commandline" type
+                    read(RES_FD, &command_argc, 4);
+                    command_argc = htobe32(command_argc);
+
+                    // For each command, display it's info
+                    for (unsigned int i = 0; i < command_argc; i++) {
+                        // First, we read the length of each string
+                        int str_length;
+                        read(RES_FD, &str_length, 4);
+                        str_length = htobe32(str_length);
+
+                        // Then, we allocate a buffer of "str_length" bits and
+                        // read "str_length" bits into the buffer.
+                        // Then, we will also print it.
+                        char* str_data = malloc(str_length);
+                        read(RES_FD, str_data, str_length);
+                        printf("%s ", str_data);
+
+                        // Finally, we can free the buffer
+                        free(str_data);
                     }
-                    
-                    
-
+                    // After each task, return to line
+                    printf("\n");
                 }
-                
-                    //printf("testtest");
-                    
-                    
-                
-                
-            }  
-            printf(0);
+            }
             break;
         }
 
         case CLIENT_REQUEST_CREATE_TASK: {
-            uint16_t op = htobe16(operation);
-            int w = write(REQ_FD, &op, sizeof(uint16_t));
-            if (w == -1) {
-                perror("Error when writing to request pipe");
-                goto error;
-            }
-
+            // Timing pointer for timing_from_strings
             struct timing* time = malloc(sizeof(struct timing));
+
+            // Command pointer for command_from_args
             struct command* cmd = malloc(sizeof(struct command));
-            //call the command_from_args function, written in command.c, and check that there are no errors
-            if (command_from_args(cmd, argc, argv, optind) == 1) {
-                perror("Command_from_args didn't work");
-                goto error;
-            };
-            //call the timing_from_string function, written in timing-text-io.c, and check that there are no errors 
+
+            // Function timing_from_strings will parse the strings given as
+            // argument and return a timing struct.
             if (timing_from_strings(time, minutes_str, hours_str,
                                     daysofweek_str) == -1) {
                 perror("Could not use timing_from_strings");
                 goto error;
             }
+
+            // Function command_from_args will fill the given struct with the
+            // "commandline" type : it will parse "argv" and return a structure
+            // of the number of commands and an array of "cstring" for each
+            // one. The "command" and the "cstring" structs are custom written.
+            if (command_from_args(cmd, argc, argv, optind) == 1) {
+                perror("Command_from_args didn't work");
+                goto error;
+            };
+
+            // BEGIN TIMING : convert and write the timing to the pipe
             time->hours = htobe32(time->hours);
             time->minutes = htobe64(time->minutes);
             write(REQ_FD, &(time->minutes), 8);
             write(REQ_FD, &(time->hours), 4);
             write(REQ_FD, &(time->daysofweek), 1);
 
-            int ac = htobe32(cmd->argc);
-            write(REQ_FD, &ac, 4);
+            // END TIMING
+
+            // BEGIN COMMANDLINE : convert and write the commandline to the pipe
+
+            // There is command_argc commands to write.
+            int command_argc = htobe32(cmd->argc);
+            write(REQ_FD, &command_argc, 4);
+
+            // For each command, write it and it's length to the pipe.
             for (unsigned int i = 0; i < cmd->argc; i++) {
+                // Write the length of the command
                 write(REQ_FD, &(cmd->argv[i].length), 4);
+
+                // Write the value of the command (string)
                 write(REQ_FD, cmd->argv[i].value, strlen(cmd->argv[i].value));
             }
+
+            // END COMMANDLINE
 
             // BEGIN - FREEING ALL POINTERS
             for (unsigned int i = 0; i < cmd->argc; i++) {
@@ -266,16 +272,27 @@ int main(int argc, char* argv[]) {
             free(time);
             // END - FREEING ALL POINTERS
 
-            uint16_t reptype;
+            // We now sent all the requests needed, we now wait for
+            // a response from the daemon.
 
+            // Reading the daemon's response from the response pipe
+            uint16_t reptype;
             read(RES_FD, &reptype, 2);
-            if (htobe16(reptype) == 0x4f4b){
-                uint64_t tId;
-                read(RES_FD,&tId,8);
-                printf("%d",htobe64(tId));
+
+            // If the response is "OK" -> "0x4f4b", we read the task id
+            // assigned for this particular task and print it
+            if (htobe16(reptype) == 0x4f4b) {
+                uint64_t res_taskid;
+                read(RES_FD, &res_taskid, 8);
+                printf("%lu", htobe64(res_taskid));
             }
+
+            // If the response is not "OK", we display an error message and exit
+            // the program cleanly by calling error:
             else {
-                printf("1");
+                perror(
+                    "CLIENT_REQUEST_CREATE_TASK : Daemon responded with an "
+                    "error code, exiting...");
                 goto error;
             }
             break;
@@ -296,8 +313,14 @@ int main(int argc, char* argv[]) {
         case CLIENT_REQUEST_GET_STDERR:
             break;
     }
+
+    // Closing the pipes before exiting.
     close(REQ_FD);
     close(RES_FD);
+
+    // Freeing pipes directory before exiting.
+    free(pipes_directory);
+    pipes_directory = NULL;
     return EXIT_SUCCESS;
 
 error:
