@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
             read(RES_FD, &reptype, 2);
 
             // Checking if the daemon response is OK...
-            if (htobe16(reptype) == 0x4552) {
+            if (be16toh(reptype) == 0x4552) {
                 perror(
                     "CLIENT_REQUEST_LIST_TASKS : Daemon responded with an "
                     "error code, exiting...");
@@ -164,14 +164,14 @@ int main(int argc, char* argv[]) {
             uint32_t command_argc;  // Command.argc
 
             read(RES_FD, &nbtasks, sizeof(nbtasks));
-            nbtasks = htobe32(nbtasks);
+            nbtasks = be32toh(nbtasks);
 
             // If tasks exists, display them in the protocol's format
             if (nbtasks > 0) {
                 for (uint32_t i = 0; i < nbtasks; i++) {
                     // Read and print the taskid
                     read(RES_FD, &res_taskid, 8);
-                    printf("%li: ", htobe64(res_taskid));
+                    printf("%li: ", be64toh(res_taskid));
 
                     // Read and print the minutes
                     read(RES_FD, &minutes, 8);
@@ -187,14 +187,14 @@ int main(int argc, char* argv[]) {
 
                     // Read the number of commands in "commandline" type
                     read(RES_FD, &command_argc, 4);
-                    command_argc = htobe32(command_argc);
+                    command_argc = be32toh(command_argc);
 
                     // For each command, display it's info
                     for (unsigned int i = 0; i < command_argc; i++) {
                         // First, we read the length of each string
                         int str_length;
                         read(RES_FD, &str_length, 4);
-                        str_length = htobe32(str_length);
+                        str_length = be32toh(str_length);
 
                         // Then, we allocate a buffer of "str_length" bits and
                         // read "str_length" bits into the buffer.
@@ -281,10 +281,10 @@ int main(int argc, char* argv[]) {
 
             // If the response is "OK" -> "0x4f4b", we read the task id
             // assigned for this particular task and print it
-            if (htobe16(reptype) == 0x4f4b) {
+            if (be16toh(reptype) == 0x4f4b) {
                 uint64_t res_taskid;
                 read(RES_FD, &res_taskid, 8);
-                printf("%lu", htobe64(res_taskid));
+                printf("%lu", be64toh(res_taskid));
             }
 
             // If the response is not "OK", we display an error message and exit
