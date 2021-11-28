@@ -173,39 +173,49 @@ int main(int argc, char* argv[]) {
             uint32_t hours;
             uint8_t day;
             uint32_t argcd;
-            struct cstring* argvd;
-            if (htobe32(nbtasks) > 0){
+            int t = htobe32(nbtasks);
+            struct cstring* cs;
+            if (t > 0){
                 
                 
-                    //printf("testtest");
-                    
+                for (uint32_t i = 0; i < t; i++)
+                {
                     read(RES_FD,&tId,8);
                     printf("%li: ",htobe64(tId));
 
                     
                     read(RES_FD,&minutes,8);
-                    printf("%li ",htobe64(minutes));
+                    printf("%s ",minutes_str);
                     
                     
                     read(RES_FD,&hours,4);
-                    printf("%i ",htobe32(hours));
+                    printf("%s ",hours_str);
 
                     
                     read(RES_FD,&day,1);
-                    printf("%i ",day);
+                    printf("%s ",daysofweek_str);
 
                    
                     read(RES_FD,&argcd,4);
-                    
-                    read(RES_FD,&argvd,4);
-                    for (uint32_t j = 0; j < argcd; j++)
+                    //printf("%li",htobe32(argcd));
+                    for (int i = 0; i < htobe32(argcd); i++)
                     {
-                        //uint32_t length;
-                        //read(RES_FD,&length,4);
-                        //char* value;
-                        //read(RES_FD,&value,4);
-                        //printf("%s","test");
+                        int l;
+                        read(RES_FD,&l,4);
+                        //printf(" %li",htobe32(l));
+                        l = htobe32(l);
+                        char val[6];
+                        read(RES_FD,val,l);
+                        printf("%s ",val);
                     }
+                    
+                    
+
+                }
+                
+                    //printf("testtest");
+                    
+                    
                 
                 
             }  
