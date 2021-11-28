@@ -4,6 +4,7 @@
 
 #include <endian.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -14,8 +15,8 @@
 #include "timing.h"
 #include "util.h"
 
-#define REQ_PIPE_PATH "./run/pipes/saturnd-request-pipe"
-#define RES_PIPE_PATH "./run/pipes/saturnd-reply-pipe"
+#define REQ_PIPE "/saturnd-request-pipe"
+#define RES_PIPE "/saturnd-reply-pipe"
 
 // list of cassini options and commands
 const char usage_info[] =
@@ -113,10 +114,65 @@ int main(int argc, char* argv[]) {
     // | TODO |
     // --------
 
+    // Allocate memory for the paths
+    char* REQ_PIPE_PATH = malloc(100);
+    char* RES_PIPE_PATH = malloc(100);
+
+    // No pipes path given in args
+    if (pipes_directory == NULL) {
+        // We allocate a buffer for the ABSOLUTE_PATH
+        // Default ABSOLUTE_PATH path should be :
+        // /tmp/<USER_NAME>/saturnd/pipes
+        char* ABSOLUTE_PATH = malloc(100);
+
+        // We allocate a buffer for the user name
+        struct passwd* pw;
+        unsigned int uid;
+
+        uid = geteuid();
+        pw = getpwuid(uid);
+        if (!pw) {
+            perror("Couldn't get username using getpwuid(uid). Exiting...");
+            goto error;
+        }
+
+        // Sadly forced to do this...
+        ABSOLUTE_PATH = strcat(ABSOLUTE_PATH, "/tmp/");
+        ABSOLUTE_PATH = strcat(ABSOLUTE_PATH, pw->pw_name);
+        ABSOLUTE_PATH = strcat(ABSOLUTE_PATH, "/saturnd/pipes");
+
+        strcpy(REQ_PIPE_PATH, ABSOLUTE_PATH);
+        strcpy(RES_PIPE_PATH, ABSOLUTE_PATH);
+
+        free(ABSOLUTE_PATH);
+
+        REQ_PIPE_PATH = strcat(REQ_PIPE_PATH, REQ_PIPE);
+        RES_PIPE_PATH = strcat(RES_PIPE_PATH, RES_PIPE);
+    }
+
+    // Else, if pipes path are given in args :
+    else {
+        strcpy(REQ_PIPE_PATH, pipes_directory);
+        strcpy(RES_PIPE_PATH, pipes_directory);
+        REQ_PIPE_PATH = strcat(REQ_PIPE_PATH, REQ_PIPE);
+        RES_PIPE_PATH = strcat(RES_PIPE_PATH, RES_PIPE);
+    }
+
     // Open the two pipes, request and response, in WRITEONLY and READONLY
     // respectively
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
     int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
+
+    // We check that there are no errors with the pipes
+    if (REQ_FD == -1) {
+        perror("Error when opening request pipe");
+        goto error;
+    }
+
+    if (RES_FD == -1) {
+        perror("Error when opening response pipe");
+        goto error;
+    }
 
     // We will always send an operation to request. This is why
     // it is out of the switch
@@ -328,13 +384,23 @@ int main(int argc, char* argv[]) {
     close(REQ_FD);
     close(RES_FD);
 
-    // Freeing pipes directory before exiting.
+    // Free the mallocs
+    free(REQ_PIPE_PATH);
+    free(RES_PIPE_PATH);
     free(pipes_directory);
     pipes_directory = NULL;
+
     return EXIT_SUCCESS;
 
 error:
     if (errno != 0) perror("main");
+    // Closing the pipes before exiting.
+    close(REQ_FD);
+    close(RES_FD);
+
+    // Free the mallocs
+    free(REQ_PIPE_PATH);
+    free(RES_PIPE_PATH);
     free(pipes_directory);
     pipes_directory = NULL;
     return EXIT_FAILURE;
