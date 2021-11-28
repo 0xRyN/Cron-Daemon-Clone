@@ -259,8 +259,11 @@ int main(int argc, char* argv[]) {
             uint16_t reptype;
 
             read(RES_FD, &reptype, 2);
-            if (htobe16(reptype) == 0x4f4b)
-                printf("0");
+            if (htobe16(reptype) == 0x4f4b){
+                uint64_t tId;
+                read(RES_FD,&tId,8);
+                printf("%d",htobe64(tId));
+            }
             else {
                 printf("1");
                 goto error;
