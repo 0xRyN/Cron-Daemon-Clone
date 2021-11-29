@@ -384,17 +384,26 @@ int main(int argc, char* argv[]) {
             uint64_t tId = htobe64(taskid); // the Task id for the th request
             
             //we make two requests, one to send the op and the other the taskid
-            int w1 = write(REQ_FD, &op, 2);
+            /*int w1 = write(REQ_FD, &op, 2);
             int w2 = write(REQ_FD, &tId, sizeof(tId));
             // we check if w1 and w2 have no error 
             if (w2 == -1 || w1 == -1) {
                 perror("Error when writing to request pipe");
                 goto error;
-            }
+            }*/
+
+            int size = sizeof(op)+sizeof(taskid);
+
+            char str_data[size] ;
+            memmove(str_data,&op,sizeof(op));
+            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+           
+           
+            int w = write(REQ_FD, str_data, size);
 
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
-
+            //printf(tId);
             // Checking if the daemon response is OK...
             if (be16toh(reptype) == 0x4552) {
                 perror(
@@ -410,13 +419,36 @@ int main(int argc, char* argv[]) {
             uint16_t op = htobe16(operation);
             uint64_t tId = htobe64(taskid);
             
-            int w1 = write(REQ_FD, &op, 2);
+            /*int w1 = write(REQ_FD, &op, 2);
             int w2 = write(REQ_FD, &tId, sizeof(tId));
             if (w2 == -1 || w1 == -1) {
                 perror("Error when writing to request pipe");
                 goto error;
+            }*/
+
+            char* str_data = malloc(sizeof(op)+sizeof(taskid));
+            memmove(str_data,&tId,sizeof(tId));
+            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+            
+            write(REQ_FD, str_data, sizeof(op)+sizeof(taskid));
+
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+
+            // Checking if the daemon response is OK...
+            if (be16toh(reptype) == 0x4552) {
+                perror(
+                    " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
+                    "error code, exiting...");
+                goto error;
             }
-            printf("%s","toto");
+
+            
+            uint32_t NbRuns;
+            int64_t time;
+            read(RES_FD,&NbRuns,4);
+            read(RES_FD,&time,8);
+            printf("%li",htobe64(time));
             break;
         }
 
