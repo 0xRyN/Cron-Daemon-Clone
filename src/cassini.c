@@ -176,12 +176,7 @@ int main(int argc, char* argv[]) {
 
     // We will always send an operation to request. This is why
     // it is out of the switch
-    uint16_t op = htobe16(operation);
-    int w = write(REQ_FD, &op, sizeof(uint16_t));
-    if (w == -1) {
-        perror("Error when writing to request pipe");
-        goto error;
-    }
+   
 
     // We check that there are no errors with the pipes
     if (REQ_FD == -1) {
@@ -199,6 +194,14 @@ int main(int argc, char* argv[]) {
     // Each operation will have different requests / responses.
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS: {
+
+            uint16_t op = htobe16(operation);
+            int w = write(REQ_FD, &op, sizeof(uint16_t));
+            if (w == -1) {
+            perror("Error when writing to request pipe");
+            goto error;
+            }
+
             // We sent the operation to the daemon. We will now read the
             // response...
             uint16_t reptype;
@@ -280,6 +283,14 @@ int main(int argc, char* argv[]) {
         }
 
         case CLIENT_REQUEST_CREATE_TASK: {
+             uint16_t op = htobe16(operation);
+            int w = write(REQ_FD, &op, sizeof(uint16_t));
+            if (w == -1) {
+            perror("Error when writing to request pipe");
+            goto error;
+            }
+            
+
             // Timing pointer for timing_from_strings
             struct timing* time = malloc(sizeof(struct timing));
 
@@ -367,8 +378,31 @@ int main(int argc, char* argv[]) {
         case CLIENT_REQUEST_TERMINATE:
             break;
 
-        case CLIENT_REQUEST_REMOVE_TASK:
+        case CLIENT_REQUEST_REMOVE_TASK:{
+
+            uint16_t op = htobe16(operation);
+            uint64_t tId = htobe64(taskid);
+            
+            int w1 = write(REQ_FD, &op, 2);
+            int w2 = write(REQ_FD, &tId, sizeof(tId));
+            if (w2 == -1 || w1 == -1) {
+                perror("Error when writing to request pipe");
+                goto error;
+            }
+
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+
+            // Checking if the daemon response is OK...
+            if (be16toh(reptype) == 0x4552) {
+                perror(
+                    " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
+                    "error code, exiting...");
+                goto error;
+            }
+
             break;
+        }
 
         case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:
             break;
