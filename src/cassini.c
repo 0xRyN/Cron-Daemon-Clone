@@ -380,11 +380,13 @@ int main(int argc, char* argv[]) {
 
         case CLIENT_REQUEST_REMOVE_TASK:{
 
-            uint16_t op = htobe16(operation);
-            uint64_t tId = htobe64(taskid);
+            uint16_t op = htobe16(operation); // the operation for the request
+            uint64_t tId = htobe64(taskid); // the Task id for the th request
             
+            //we make two requests, one to send the op and the other the taskid
             int w1 = write(REQ_FD, &op, 2);
             int w2 = write(REQ_FD, &tId, sizeof(tId));
+            // we check if w1 and w2 have no error 
             if (w2 == -1 || w1 == -1) {
                 perror("Error when writing to request pipe");
                 goto error;
@@ -404,8 +406,19 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:
+        case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:{
+            uint16_t op = htobe16(operation);
+            uint64_t tId = htobe64(taskid);
+            
+            int w1 = write(REQ_FD, &op, 2);
+            int w2 = write(REQ_FD, &tId, sizeof(tId));
+            if (w2 == -1 || w1 == -1) {
+                perror("Error when writing to request pipe");
+                goto error;
+            }
+            printf("%s","toto");
             break;
+        }
 
         case CLIENT_REQUEST_GET_STDOUT:
             break;
