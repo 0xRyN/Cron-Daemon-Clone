@@ -408,16 +408,18 @@ int main(int argc, char* argv[]) {
         }
 
         case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:{
-            uint16_t op = htobe16(operation);
-            uint64_t tId = htobe64(taskid);
-
-
-            //we make a request to send the op the taskid
-            char* str_data = malloc(sizeof(op)+sizeof(taskid));
-            memmove(str_data,&tId,sizeof(tId));
-            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+            uint16_t op = htobe16(operation); // the operation for the request
+            uint64_t tId = htobe64(taskid); // the Task id for the th request
             
-            write(REQ_FD, str_data, sizeof(op)+sizeof(taskid));
+            //we make a request to send the op the taskid
+            int size = sizeof(op)+sizeof(taskid);
+
+            char str_data[size] ;
+            memmove(str_data,&op,sizeof(op));
+            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+           
+           
+            int w = write(REQ_FD, str_data, size);
 
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
@@ -435,7 +437,8 @@ int main(int argc, char* argv[]) {
             int64_t time;
             read(RES_FD,&NbRuns,4);
             read(RES_FD,&time,8);
-            printf("%li",htobe64(time));
+            float year = htobe64(time)/60/60/24/365.24;
+            printf("%f",1970+year);
             break;
         }
 
