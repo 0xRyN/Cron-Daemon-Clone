@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 struct timing {
-  uint64_t minutes;
-  uint32_t hours;
-  uint8_t daysofweek;
+    uint64_t minutes;
+    uint32_t hours;
+    uint8_t daysofweek;
 };
 
-#endif // TIMING_H
+#endif  // TIMING_H
