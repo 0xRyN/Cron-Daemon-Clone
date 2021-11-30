@@ -14,6 +14,7 @@
 #include "timing-text-io.h"
 #include "timing.h"
 #include "util.h"
+#include "time.h"
 
 #define REQ_PIPE "/saturnd-request-pipe"
 #define RES_PIPE "/saturnd-reply-pipe"
@@ -434,19 +435,80 @@ int main(int argc, char* argv[]) {
 
             
             uint32_t NbRuns;
-            int64_t time;
             read(RES_FD,&NbRuns,4);
-            read(RES_FD,&time,8);
-            float year = htobe64(time)/60/60/24/365.24;
-            printf("%f",1970+year);
+            for(int i = 0; i<= be32toh(NbRuns);i++){
+                int64_t time;
+                read(RES_FD,&time,8);
+                float sec = be64toh(time);
+                int k = (int)sec;
+                time_t timestamp = k+7200-29;
+                struct tm * timeInfos = gmtime( &timestamp );
+                uint16_t exitcode;
+                read(RES_FD,&exitcode,2);
+
+                printf( "%04d-%02d-%02d %02d:%02d:%02d %i\n",
+                timeInfos->tm_year+1900, timeInfos->tm_mon+1, timeInfos->tm_mday,
+                timeInfos->tm_hour, timeInfos->tm_min, timeInfos->tm_sec, exitcode
+                );
+                i++;
+            }
+
             break;
         }
 
-        case CLIENT_REQUEST_GET_STDOUT:
-            break;
+        case CLIENT_REQUEST_GET_STDOUT:{
+            uint16_t op = be16toh(operation); // the operation for the request
+            uint64_t tId = be64toh(taskid); // the Task id for the th request
+            
+            //we make a request to send the op the taskid
+            int size = sizeof(op)+sizeof(taskid);
 
-        case CLIENT_REQUEST_GET_STDERR:
+            char str_data[size] ;
+            memmove(str_data,&op,sizeof(op));
+            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+           
+           
+            int w = write(REQ_FD, str_data, size);
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+
+            // Checking if the daemon response is OK...
+            if (be16toh(reptype) == 0x4e46) {
+                perror(
+                    " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
+                    "error code, exiting...");
+                goto error;
+            }
+
+            uint32_t length;
+
+            read(RES_FD,&length,4);
+            length = be32toh(length);
+            char response [length];
+            read(RES_FD,response,length);
+            printf("%s",response);
+            //printf("test-1");
+
             break;
+        }
+        
+        case CLIENT_REQUEST_GET_STDERR:{
+            uint16_t op = be16toh(operation); // the operation for the request
+            uint64_t tId = be64toh(taskid); // the Task id for the th request
+            //we make a request to send the op the taskid
+            int size = sizeof(op)+sizeof(taskid);
+            char str_data[size] ;
+            memmove(str_data,&op,sizeof(op));
+            memmove(str_data+sizeof(op),&tId,sizeof(tId));
+            int w = write(REQ_FD, str_data, size);
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+
+            uint16_t er;
+            read(RES_FD,&er,2);
+            printf("%i",be16toh(er));
+            break;
+        }
     }
 
     // Closing the pipes before exiting.
