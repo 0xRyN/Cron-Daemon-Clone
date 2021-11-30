@@ -38,7 +38,7 @@ int command_from_args(struct command* dest, int argc, char* argv[],
 
         // Set the length of the "cstring"
         int32_t cstring_length = strlen(argv[i]);
-        str.length = htobe32(cstring_length);
+        str.length = cstring_length;
 
         // Set the value of the "cstring"
         str.value = malloc(cstring_length);

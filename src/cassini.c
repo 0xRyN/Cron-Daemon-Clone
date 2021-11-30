@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "command.h"
+#include "time.h"
 #include "timing-text-io.h"
 #include "timing.h"
 #include "util.h"
@@ -161,7 +162,7 @@ int main(int argc, char* argv[]) {
     // Open the two pipes, request and response, in WRITEONLY and READONLY
     // respectively
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
-    int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
+    int RES_FD = open(RES_PIPE_PATH, O_RDWR);
 
     // We check that there are no errors with the pipes
     if (REQ_FD == -1) {
@@ -176,7 +177,6 @@ int main(int argc, char* argv[]) {
 
     // We will always send an operation to request. This is why
     // it is out of the switch
-   
 
     // We check that there are no errors with the pipes
     if (REQ_FD == -1) {
@@ -194,12 +194,11 @@ int main(int argc, char* argv[]) {
     // Each operation will have different requests / responses.
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS: {
-
             uint16_t op = htobe16(operation);
             int w = write(REQ_FD, &op, sizeof(uint16_t));
             if (w == -1) {
-            perror("Error when writing to request pipe");
-            goto error;
+                perror("Error when writing to request pipe");
+                goto error;
             }
 
             // We sent the operation to the daemon. We will now read the
@@ -208,7 +207,7 @@ int main(int argc, char* argv[]) {
             read(RES_FD, &reptype, 2);
 
             // Checking if the daemon response is OK...
-            if (be16toh(reptype) == 0x4552) {
+            if (be16toh(reptype) == SERVER_REPLY_ERROR) {
                 perror(
                     "CLIENT_REQUEST_LIST_TASKS : Daemon responded with an "
                     "error code, exiting...");
@@ -283,14 +282,6 @@ int main(int argc, char* argv[]) {
         }
 
         case CLIENT_REQUEST_CREATE_TASK: {
-             uint16_t op = htobe16(operation);
-            int w = write(REQ_FD, &op, sizeof(uint16_t));
-            if (w == -1) {
-            perror("Error when writing to request pipe");
-            goto error;
-            }
-            
-
             // Timing pointer for timing_from_strings
             struct timing* time = malloc(sizeof(struct timing));
 
@@ -314,39 +305,75 @@ int main(int argc, char* argv[]) {
                 goto error;
             };
 
-            // BEGIN TIMING : convert and write the timing to the pipe
+            // Buffer size = op (2) + timing (8 + 4 + 1) + command_argc (4)
+            int buf_size = 0;
+            buf_size = 2 + 8 + 4 + 1 + 4;
+
+            // For each command, add the length (4) and the value of the length
+            uint32_t command_argc = cmd->argc;
+            for (unsigned int i = 0; i < cmd->argc; i++) {
+                buf_size += 4;
+                buf_size += cmd->argv[i].length;
+            }
+
+            // Assign the write buffer to it's exact size
+            char buf[buf_size];
+
+            // Add an offset variable for memcpy
+            int offset = 0;
+
+            // Convert and add to buffer, update offset
+            u_int16_t op = htobe16(operation);
+            memcpy(buf + offset, &(op), 2);
+            offset += 2;
+
+            // BEGIN TIMING - Convert and add to buffer, update offset
+
             time->hours = htobe32(time->hours);
             time->minutes = htobe64(time->minutes);
-            write(REQ_FD, &(time->minutes), 8);
-            write(REQ_FD, &(time->hours), 4);
-            write(REQ_FD, &(time->daysofweek), 1);
+            memcpy(buf + offset, &(time->minutes), 8);
+            offset += 8;
+            memcpy(buf + offset, &(time->hours), 4);
+            offset += 4;
+            memcpy(buf + offset, &(time->daysofweek), 1);
+            offset += 1;
 
             // END TIMING
 
-            // BEGIN COMMANDLINE : convert and write the commandline to the pipe
+            // BEGIN COMMANDLINE : Convert and add to buffer, argc and argv
 
-            // There is command_argc commands to write.
-            int command_argc = htobe32(cmd->argc);
-            write(REQ_FD, &command_argc, 4);
+            // ARGC
+            // Convert and add to buffer, update offset
+            command_argc = htobe32(command_argc);
+            memcpy(buf + offset, &command_argc, 4);
+            offset += 4;
 
-            // For each command, write it and it's length to the pipe.
+            // ARGV
+            // For each command, convert and add to buffer, update offset
             for (unsigned int i = 0; i < cmd->argc; i++) {
-                // Write the length of the command
-                write(REQ_FD, &(cmd->argv[i].length), 4);
+                uint32_t converted_length = htobe32(cmd->argv[i].length);
+                uint32_t length = cmd->argv[i].length;
 
-                // Write the value of the command (string)
-                write(REQ_FD, cmd->argv[i].value, strlen(cmd->argv[i].value));
+                memcpy(buf + offset, &(converted_length), 4);
+                offset += 4;
+                memcpy(buf + offset, cmd->argv[i].value, length);
+                offset += length;
             }
 
             // END COMMANDLINE
 
+            // Giant satisfying write. Writes everything to request fifo
+            write(REQ_FD, buf, buf_size);
+
             // BEGIN - FREEING ALL POINTERS
+
             for (unsigned int i = 0; i < cmd->argc; i++) {
                 free(cmd->argv[i].value);
             }
             free(cmd->argv);
             free(cmd);
             free(time);
+
             // END - FREEING ALL POINTERS
 
             // We now sent all the requests needed, we now wait for
@@ -358,7 +385,7 @@ int main(int argc, char* argv[]) {
 
             // If the response is "OK" -> "0x4f4b", we read the task id
             // assigned for this particular task and print it
-            if (be16toh(reptype) == 0x4f4b) {
+            if (be16toh(reptype) == SERVER_REPLY_OK) {
                 uint64_t res_taskid;
                 read(RES_FD, &res_taskid, 8);
                 printf("%lu", be64toh(res_taskid));
@@ -375,29 +402,16 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        case CLIENT_REQUEST_TERMINATE:
-            break;
+        case CLIENT_REQUEST_TERMINATE: {
+            uint16_t op = htobe16(operation);  // Operation for the request
+            write(REQ_FD, &op, 2);
 
-        case CLIENT_REQUEST_REMOVE_TASK:{
-
-            uint16_t op = htobe16(operation); // the operation for the request
-            uint64_t tId = htobe64(taskid); // the Task id for the th request
-            
-            //we make a request to send the op the taskid
-            int size = sizeof(op)+sizeof(taskid);
-
-            char str_data[size] ;
-            memmove(str_data,&op,sizeof(op));
-            memmove(str_data+sizeof(op),&tId,sizeof(tId));
-           
-           
-            int w = write(REQ_FD, str_data, size);
-
+            // Wait for the response
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
             // Checking if the daemon response is OK...
-            if (be16toh(reptype) == 0x4552) {
+            if (be16toh(reptype) == SERVER_REPLY_ERROR) {
                 perror(
                     " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
                     "error code, exiting...");
@@ -407,43 +421,238 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:{
-            uint16_t op = htobe16(operation);
-            uint64_t tId = htobe64(taskid);
+        case CLIENT_REQUEST_REMOVE_TASK: {
+            uint16_t op = htobe16(operation);  // Operation for the request
+            uint64_t tId = htobe64(taskid);    // Task id for the the request
 
+            // Allocate a buffer of size operation + taskid
+            int size = sizeof(op) + sizeof(taskid);
+            char buf[size];
 
-            //we make a request to send the op the taskid
-            char* str_data = malloc(sizeof(op)+sizeof(taskid));
-            memmove(str_data,&tId,sizeof(tId));
-            memmove(str_data+sizeof(op),&tId,sizeof(tId));
-            
-            write(REQ_FD, str_data, sizeof(op)+sizeof(taskid));
+            // Move all data to the buffer
+            memmove(buf, &op, sizeof(op));
+            memmove(buf + sizeof(op), &tId, sizeof(tId));
 
+            // Write the buffer to the request pipe
+            write(REQ_FD, buf, size);
+
+            // Wait for the response
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
             // Checking if the daemon response is OK...
-            if (be16toh(reptype) == 0x4552) {
+            if (be16toh(reptype) == SERVER_REPLY_ERROR) {
                 perror(
                     " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
                     "error code, exiting...");
                 goto error;
             }
 
-            
-            uint32_t NbRuns;
-            int64_t time;
-            read(RES_FD,&NbRuns,4);
-            read(RES_FD,&time,8);
-            printf("%li",htobe64(time));
             break;
         }
 
-        case CLIENT_REQUEST_GET_STDOUT:
-            break;
+        case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES: {
+            uint16_t op = htobe16(operation);  // Operation for the request
+            uint64_t tId = htobe64(taskid);    // Task id for the the request
 
-        case CLIENT_REQUEST_GET_STDERR:
+            // Allocate a buffer of size operation + taskid
+            int size = sizeof(op) + sizeof(taskid);
+            char buf[size];
+
+            // Move all data to the buffer
+            memmove(buf, &op, sizeof(op));
+            memmove(buf + sizeof(op), &tId, sizeof(tId));
+
+            // Write the buffer to the request pipe
+            write(REQ_FD, buf, size);
+
+            // Wait for the response
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+
+            // Checking if the daemon response is OK...
+            if (be16toh(reptype) == SERVER_REPLY_ERROR) {
+                perror(
+                    " CLIENT_REQUEST_REMOVE_TASK: : Daemon responded with an "
+                    "error code, exiting...");
+                goto error;
+            }
+
+            // Read number of runs
+            uint32_t nbRuns;
+            read(RES_FD, &nbRuns, 4);
+            nbRuns = be32toh(nbRuns);
+
+            // For each run, read the data and print it
+            for (unsigned int i = 0; i < nbRuns; i++) {
+                // Read and convert time
+                int64_t run_time;
+                read(RES_FD, &run_time, 8);
+                run_time = be64toh(run_time);
+
+                // Build a struct from the run's time
+                struct tm* timeInfos = localtime(&run_time);
+
+                // Read and convert exitcode
+                uint16_t exitcode;
+                read(RES_FD, &exitcode, 2);
+                exitcode = be16toh(exitcode);
+
+                // Do the necessary print
+                // PS : Mon is increased by one because first value is 0
+                printf("%04d-%02d-%02d %02d:%02d:%02d %i\n",
+                       timeInfos->tm_year + 1900, timeInfos->tm_mon + 1,
+                       timeInfos->tm_mday, timeInfos->tm_hour,
+                       timeInfos->tm_min, timeInfos->tm_sec, exitcode);
+            }
             break;
+        }
+
+        case CLIENT_REQUEST_GET_STDOUT: {
+            uint16_t op = htobe16(operation);  // Operation for the request
+            uint64_t tId = htobe64(taskid);    // Task id for the the request
+
+            // Allocate a buffer of size operation + taskid
+            int size = sizeof(op) + sizeof(taskid);
+            char buf[size];
+
+            // Move all data to the buffer
+            memmove(buf, &op, sizeof(op));
+            memmove(buf + sizeof(op), &tId, sizeof(tId));
+
+            // Write the buffer to the request pipe
+            write(REQ_FD, buf, size);
+
+            // Read and convert the response
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+            reptype = be16toh(reptype);
+
+            // Daemon responded successfully
+            if (reptype == SERVER_REPLY_OK) {
+                // Read and convert the length of the string
+                uint32_t length;
+                read(RES_FD, &length, sizeof(length));
+                length = be32toh(length);
+
+                // Alloc a buffer, read length bytes of memory to it and print
+                char buf[length];
+                read(RES_FD, buf, length - 1);
+                printf("%s", buf);
+            }
+
+            // Daemon had an error
+            else if (reptype == SERVER_REPLY_ERROR) {
+                // Read and convert the error code
+                uint16_t err;
+                read(RES_FD, &err, 2);
+                err = be16toh(err);
+
+                // If the task has not been found
+                if (err == SERVER_REPLY_ERROR_NOT_FOUND) {
+                    printf(
+                        "Task with the given taskid was not found. Exiting...");
+                    goto error;
+                }
+
+                // If the task has not been ran
+                else if (err == SERVER_REPLY_ERROR_NEVER_RUN) {
+                    printf(
+                        "Task with the given taskid wasn't run at least once. "
+                        "Exiting...");
+                    goto error;
+                }
+
+                // This shoudln't happen
+                else {
+                    perror("get_stdout : errcode is corrupted.");
+                    goto error;
+                }
+
+                // Print the error code
+                printf("%i", err);
+            }
+
+            // This shouldn't happen
+            else {
+                perror("get_stdout : reptype is corrupted.");
+                goto error;
+            }
+            break;
+        }
+
+        case CLIENT_REQUEST_GET_STDERR: {
+            uint16_t op = htobe16(operation);  // Operation for the request
+            uint64_t tId = htobe64(taskid);    // Task id for the the request
+
+            // Allocate a buffer of size operation + taskid
+            int size = sizeof(op) + sizeof(taskid);
+            char buf[size];
+
+            // Move all data to the buffer
+            memmove(buf, &op, sizeof(op));
+            memmove(buf + sizeof(op), &tId, sizeof(tId));
+
+            // Write the buffer to the request pipe
+            write(REQ_FD, buf, size);
+
+            // Read and convert the response
+            uint16_t reptype;
+            read(RES_FD, &reptype, 2);
+            reptype = be16toh(reptype);
+
+            // Daemon responded successfully
+            if (reptype == SERVER_REPLY_OK) {
+                // Read and convert the length of the string
+                uint32_t length;
+                read(RES_FD, &length, sizeof(length));
+                length = be32toh(length);
+
+                // Alloc a buffer, read length bytes of memory to it and print
+                char buf[length];
+                read(RES_FD, buf, length - 1);
+                printf("%s", buf);
+            }
+
+            // Daemon had an error
+            else if (reptype == SERVER_REPLY_ERROR) {
+                // Read and convert the error code
+                uint16_t err;
+                read(RES_FD, &err, 2);
+                err = be16toh(err);
+
+                // If the task has not been found
+                if (err == SERVER_REPLY_ERROR_NOT_FOUND) {
+                    printf(
+                        "Task with the given taskid was not found. Exiting...");
+                    goto error;
+                }
+
+                // If the task has not been ran
+                else if (err == SERVER_REPLY_ERROR_NEVER_RUN) {
+                    printf(
+                        "Task with the given taskid wasn't run at least once. "
+                        "Exiting...");
+                    goto error;
+                }
+
+                // This shoudln't happen
+                else {
+                    perror("get_stderr : errcode is corrupted.");
+                    goto error;
+                }
+
+                // Print the error code
+                printf("%i", err);
+            }
+
+            // This shouldn't happen
+            else {
+                perror("get_stderr : reptype is corrupted.");
+                goto error;
+            }
+            break;
+        }
     }
 
     // Closing the pipes before exiting.
