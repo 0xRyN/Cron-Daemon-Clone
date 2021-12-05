@@ -1,9 +1,14 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include <cstring.h>
+#include <endian.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "./cstring.h"
+#include "cstring.h"
 
 // The "commandline" type. It is called "command" because it is more concise and
 // easier to read

@@ -1,23 +1,4 @@
-#define _DEFAULT_SOURCE
-
 #include "cassini.h"
-
-#include <endian.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "command.h"
-#include "time.h"
-#include "timing-text-io.h"
-#include "timing.h"
-#include "util.h"
-
-#define REQ_PIPE "/saturnd-request-pipe"
-#define RES_PIPE "/saturnd-reply-pipe"
 
 // list of cassini options and commands
 const char usage_info[] =
@@ -116,15 +97,15 @@ int main(int argc, char* argv[]) {
     // --------
 
     // Allocate memory for the paths
-    char* REQ_PIPE_PATH = malloc(100);
-    char* RES_PIPE_PATH = malloc(100);
+    char* REQ_PIPE_PATH = malloc(256);
+    char* RES_PIPE_PATH = malloc(256);
 
     // No pipes path given in args
     if (pipes_directory == NULL) {
         // We allocate a buffer for the ABSOLUTE_PATH
         // Default ABSOLUTE_PATH path should be :
         // /tmp/<USER_NAME>/saturnd/pipes
-        char* ABSOLUTE_PATH = malloc(100);
+        char* ABSOLUTE_PATH = malloc(256);
 
         // We allocate a buffer for the user name
         struct passwd* pw;
@@ -175,29 +156,15 @@ int main(int argc, char* argv[]) {
         goto error;
     }
 
-    // We will always send an operation to request. This is why
-    // it is out of the switch
-
-    // We check that there are no errors with the pipes
-    if (REQ_FD == -1) {
-        perror("Error when opening request pipe");
-        goto error;
-    }
-
-    if (RES_FD == -1) {
-        perror("Error when opening response pipe");
-        goto error;
-    }
-
     // Main switch :
     // This is to know which task operation we assigned to Cassini.
     // Each operation will have different requests / responses.
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS: {
+            // Convert and write operation
             uint16_t op = htobe16(operation);
-            int w = write(REQ_FD, &op, sizeof(uint16_t));
-            if (w == -1) {
-                perror("Error when writing to request pipe");
+            if (write(REQ_FD, &op, 2) < 2) {
+                perror("LIST_TASKS : Write error...");
                 goto error;
             }
 
@@ -363,7 +330,10 @@ int main(int argc, char* argv[]) {
             // END COMMANDLINE
 
             // Giant satisfying write. Writes everything to request fifo
-            write(REQ_FD, buf, buf_size);
+            if (write(REQ_FD, buf, buf_size) < buf_size) {
+                perror("CREATE_TASK : Write error...");
+                goto error;
+            }
 
             // BEGIN - FREEING ALL POINTERS
 
@@ -403,8 +373,12 @@ int main(int argc, char* argv[]) {
         }
 
         case CLIENT_REQUEST_TERMINATE: {
-            uint16_t op = htobe16(operation);  // Operation for the request
-            write(REQ_FD, &op, 2);
+            // Convert and write operation
+            uint16_t op = htobe16(operation);
+            if (write(REQ_FD, &op, 2) < 2) {
+                perror("REQUEST_TERMINATE : Write error...");
+                goto error;
+            }
 
             // Wait for the response
             uint16_t reptype;
@@ -434,7 +408,10 @@ int main(int argc, char* argv[]) {
             memmove(buf + sizeof(op), &tId, sizeof(tId));
 
             // Write the buffer to the request pipe
-            write(REQ_FD, buf, size);
+            if (write(REQ_FD, buf, size) < size) {
+                perror("REMOVE_TASK : Write error...");
+                goto error;
+            }
 
             // Wait for the response
             uint16_t reptype;
@@ -464,7 +441,10 @@ int main(int argc, char* argv[]) {
             memmove(buf + sizeof(op), &tId, sizeof(tId));
 
             // Write the buffer to the request pipe
-            write(REQ_FD, buf, size);
+            if (write(REQ_FD, buf, size) < size) {
+                perror("GET_TIMES : Write error...");
+                goto error;
+            }
 
             // Wait for the response
             uint16_t reptype;
@@ -521,7 +501,10 @@ int main(int argc, char* argv[]) {
             memmove(buf + sizeof(op), &tId, sizeof(tId));
 
             // Write the buffer to the request pipe
-            write(REQ_FD, buf, size);
+            if (write(REQ_FD, buf, size) < size) {
+                perror("GET_TIMES : Write error...");
+                goto error;
+            }
 
             // Read and convert the response
             uint16_t reptype;
@@ -594,7 +577,10 @@ int main(int argc, char* argv[]) {
             memmove(buf + sizeof(op), &tId, sizeof(tId));
 
             // Write the buffer to the request pipe
-            write(REQ_FD, buf, size);
+            if (write(REQ_FD, buf, size) < size) {
+                perror("GET_TIMES : Write error...");
+                goto error;
+            }
 
             // Read and convert the response
             uint16_t reptype;

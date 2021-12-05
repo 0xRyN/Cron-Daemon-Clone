@@ -2,14 +2,6 @@
 
 #include "command.h"
 
-#include <cstring.h>
-#include <endian.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "util.h"
-
 // Builds a command structure. Writes the struct into *dest. Returns 0 if
 // everything is fine. Else, will return 1;
 int command_from_args(struct command* dest, int argc, char* argv[],
