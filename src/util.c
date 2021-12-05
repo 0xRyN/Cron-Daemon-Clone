@@ -1,7 +1,6 @@
 #include "util.h"
 
-#include <stdio.h>
-#include <string.h>
+/* /!\ NOT USED FOR CASSINI - BUT COULD BE USED FOR THE DAEMON /!\ */
 
 // Simple function to reverse a string. Returns the reversed string.
 char *rev(char *s) {
