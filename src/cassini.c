@@ -519,9 +519,11 @@ int main(int argc, char* argv[]) {
                 length = be32toh(length);
 
                 // Alloc a buffer, read length bytes of memory to it and print
-                char buf[length];
-                read(RES_FD, buf, length - 1);
-                printf("%s", buf);
+                if (length != 0) {
+                    char buf[length];
+                    read(RES_FD, buf, length);
+                    printf("%s", buf);
+                }
             }
 
             // Daemon had an error
@@ -595,9 +597,12 @@ int main(int argc, char* argv[]) {
                 length = be32toh(length);
 
                 // Alloc a buffer, read length bytes of memory to it and print
-                char buf[length];
-                read(RES_FD, buf, length - 1);
-                printf("%s", buf);
+                if (length != 0) {
+                    char buf[length];
+                    read(RES_FD, buf, length);
+                    printf("%s", buf);
+                }
+
             }
 
             // Daemon had an error
