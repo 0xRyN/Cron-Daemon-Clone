@@ -21,6 +21,12 @@
 #include "timing-text-io.h"
 #include "timing.h"
 #include "util.h"
+#include "create_task.h"
+#include "terminate.h"
+#include "remove_task.h"
+#include "get_time_and_exitcodes.h"
+#include "get_stdout.h"
+#include "get_stderr.h"
 
 #define REQ_PIPE "/saturnd-request-pipe"
 #define RES_PIPE "/saturnd-reply-pipe"
