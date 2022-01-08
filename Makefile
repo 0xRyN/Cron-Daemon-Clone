@@ -1,19 +1,24 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -I include
-SRC = $(wildcard src/*.c)
-OBJ = $(SRC:.c=.o)
-EXEC = cassini
+SRCCASSINI = $(wildcard src/cassini/*.c)
+SRCSATURND = $(wildcard src/saturnd/*.c)
+OBJCASSINI = $(SRCCASSINI:.c=.o)
+OBJSATURND = $(SRCSATURND:.c=.o)
+EXEC = cassini saturnd
 
 all: $(EXEC)
 
-$(EXEC) : $(OBJ)
-	$(CC) -o $@ $(OBJ)
+cassini : $(OBJCASSINI)
+	$(CC) -o $@ $(OBJCASSINI)
+
+saturnd : $(OBJSATURND)
+	$(CC) -o $@ $(OBJSATURND)
 
 %.o : %.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean : 
-	rm -rf src/*.o ./$(EXEC)
+	rm -f src/*/*.o $(EXEC)
 
 distclean : 
-	rm -rf src/*.o ./$(EXEC)
+	rm -f src/*/*/.o $(EXEC)
