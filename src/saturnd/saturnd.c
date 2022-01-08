@@ -5,6 +5,9 @@
 
 int main(int argc, char* argv[]) {
     int pid = fork();
-    if (pid != 0) exit(0);
+    if (pid == 0) {
+        sleep(1);
+    } else
+        exit(0);
     return 0;
 }
