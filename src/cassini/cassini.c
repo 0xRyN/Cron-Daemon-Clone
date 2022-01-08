@@ -140,21 +140,7 @@ int main(int argc, char* argv[]) {
         RES_PIPE_PATH = strcat(RES_PIPE_PATH, RES_PIPE);
     }
 
-    // Open the two pipes, request and response, in WRITEONLY and READONLY
-    // respectively
-    int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
-    int RES_FD = open(RES_PIPE_PATH, O_RDWR);
-
-    // We check that there are no errors with the pipes
-    if (REQ_FD == -1) {
-        perror("Error when opening request pipe");
-        goto error;
-    }
-
-    if (RES_FD == -1) {
-        perror("Error when opening response pipe");
-        goto error;
-    }
+ 
 
     // Main switch :
     // This is to know which task operation we assigned to Cassini.
@@ -162,11 +148,15 @@ int main(int argc, char* argv[]) {
     switch (operation) {
         case CLIENT_REQUEST_LIST_TASKS: {
             // Convert and write operation
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             uint16_t op = htobe16(operation);
             if (write(REQ_FD, &op, 2) < 2) {
                 perror("LIST_TASKS : Write error...");
                 goto error;
             }
+            close(REQ_FD);
+
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
 
             // We sent the operation to the daemon. We will now read the
             // response...
@@ -245,11 +235,13 @@ int main(int argc, char* argv[]) {
                     printf("\n");
                 }
             }
+            close(RES_FD);
             break;
         }
 
         case CLIENT_REQUEST_CREATE_TASK: {
             // Timing pointer for timing_from_strings
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             struct timing* time = malloc(sizeof(struct timing));
 
             // Command pointer for command_from_args
@@ -334,6 +326,7 @@ int main(int argc, char* argv[]) {
                 perror("CREATE_TASK : Write error...");
                 goto error;
             }
+            close(REQ_FD);
 
             // BEGIN - FREEING ALL POINTERS
 
@@ -350,6 +343,7 @@ int main(int argc, char* argv[]) {
             // a response from the daemon.
 
             // Reading the daemon's response from the response pipe
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
@@ -369,18 +363,22 @@ int main(int argc, char* argv[]) {
                     "error code, exiting...");
                 goto error;
             }
+            close(RES_FD);
             break;
         }
 
+
         case CLIENT_REQUEST_TERMINATE: {
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             // Convert and write operation
             uint16_t op = htobe16(operation);
             if (write(REQ_FD, &op, 2) < 2) {
                 perror("REQUEST_TERMINATE : Write error...");
                 goto error;
             }
-
+            close(REQ_FD);
             // Wait for the response
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
@@ -391,11 +389,12 @@ int main(int argc, char* argv[]) {
                     "error code, exiting...");
                 goto error;
             }
-
+            close(RES_FD);
             break;
         }
 
         case CLIENT_REQUEST_REMOVE_TASK: {
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             uint16_t op = htobe16(operation);  // Operation for the request
             uint64_t tId = htobe64(taskid);    // Task id for the the request
 
@@ -412,8 +411,10 @@ int main(int argc, char* argv[]) {
                 perror("REMOVE_TASK : Write error...");
                 goto error;
             }
+            close(REQ_FD);
 
             // Wait for the response
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
@@ -424,11 +425,12 @@ int main(int argc, char* argv[]) {
                     "error code, exiting...");
                 goto error;
             }
-
+            close(RES_FD);
             break;
         }
 
         case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES: {
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             uint16_t op = htobe16(operation);  // Operation for the request
             uint64_t tId = htobe64(taskid);    // Task id for the the request
 
@@ -445,8 +447,10 @@ int main(int argc, char* argv[]) {
                 perror("GET_TIMES : Write error...");
                 goto error;
             }
+            close(REQ_FD);
 
             // Wait for the response
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
 
@@ -485,10 +489,12 @@ int main(int argc, char* argv[]) {
                        timeInfos->tm_mday, timeInfos->tm_hour,
                        timeInfos->tm_min, timeInfos->tm_sec, exitcode);
             }
+            close(RES_FD);
             break;
         }
 
         case CLIENT_REQUEST_GET_STDOUT: {
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             uint16_t op = htobe16(operation);  // Operation for the request
             uint64_t tId = htobe64(taskid);    // Task id for the the request
 
@@ -505,8 +511,10 @@ int main(int argc, char* argv[]) {
                 perror("GET_TIMES : Write error...");
                 goto error;
             }
+            close(REQ_FD);
 
             // Read and convert the response
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
             reptype = be16toh(reptype);
@@ -522,6 +530,8 @@ int main(int argc, char* argv[]) {
                 if (length != 0) {
                     char buf[length];
                     read(RES_FD, buf, length);
+                    // Never forget null terminator
+                    buf[length] = '\0';
                     printf("%s", buf);
                 }
             }
@@ -563,10 +573,12 @@ int main(int argc, char* argv[]) {
                 perror("get_stdout : reptype is corrupted.");
                 goto error;
             }
+            close(RES_FD);
             break;
         }
 
         case CLIENT_REQUEST_GET_STDERR: {
+            int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
             uint16_t op = htobe16(operation);  // Operation for the request
             uint64_t tId = htobe64(taskid);    // Task id for the the request
 
@@ -583,8 +595,10 @@ int main(int argc, char* argv[]) {
                 perror("GET_TIMES : Write error...");
                 goto error;
             }
+            close(REQ_FD);
 
             // Read and convert the response
+            int RES_FD = open(RES_PIPE_PATH, O_RDONLY);
             uint16_t reptype;
             read(RES_FD, &reptype, 2);
             reptype = be16toh(reptype);
@@ -600,6 +614,8 @@ int main(int argc, char* argv[]) {
                 if (length != 0) {
                     char buf[length];
                     read(RES_FD, buf, length);
+                    // Never forget null terminator
+                    buf[length] = '\0';
                     printf("%s", buf);
                 }
 
@@ -642,13 +658,13 @@ int main(int argc, char* argv[]) {
                 perror("get_stderr : reptype is corrupted.");
                 goto error;
             }
+            close(RES_FD);
             break;
         }
     }
 
     // Closing the pipes before exiting.
-    close(REQ_FD);
-    close(RES_FD);
+    
 
     // Free the mallocs
     free(REQ_PIPE_PATH);
@@ -661,8 +677,6 @@ int main(int argc, char* argv[]) {
 error:
     if (errno != 0) perror("main");
     // Closing the pipes before exiting.
-    close(REQ_FD);
-    close(RES_FD);
 
     // Free the mallocs
     free(REQ_PIPE_PATH);
