@@ -6,6 +6,11 @@
 
 // Just an utilitary header for utilitary functions
 
-char *rev(char *s);
+struct pipes_paths {
+    char *REQ_PATH;
+    char *RES_PATH;
+};
+
+rev(char *s);
 
 #endif  // UTIL_H
