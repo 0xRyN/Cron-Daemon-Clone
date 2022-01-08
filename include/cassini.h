@@ -27,6 +27,7 @@
 #include "get_time_and_exitcodes.h"
 #include "get_stdout.h"
 #include "get_stderr.h"
+#include "list_tasks.h"
 
 #define REQ_PIPE "/saturnd-request-pipe"
 #define RES_PIPE "/saturnd-reply-pipe"
