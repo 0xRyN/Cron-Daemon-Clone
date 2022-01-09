@@ -32,7 +32,7 @@
 #define REQ_PIPE "/saturnd-request-pipe"
 #define RES_PIPE "/saturnd-reply-pipe"
 
-#include "cassini-client-request.h"
+#include "client-request.h"
 #include "server-reply.h"
 
 #endif  // CASSINI
