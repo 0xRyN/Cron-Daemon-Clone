@@ -12,7 +12,7 @@ all: objs $(EXEC)
 
 objs: $(OBJCOMMON)
 
-cassini : $(OBJCASSINI) objs
+cassini : $(OBJCASSINI)
 	$(CC) -o $@ $(OBJCASSINI) $(OBJCOMMON)
 
 saturnd : $(OBJSATURND) objs

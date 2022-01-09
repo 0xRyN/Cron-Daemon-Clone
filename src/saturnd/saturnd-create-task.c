@@ -2,6 +2,9 @@
 
 int nb_tasks;
 char *buf;
+char abs_path[256];
+char req_fifo[256];
+char res_fifo[256];
 
 int handle_taskid(char *path) {
     char taskid_path[256];
@@ -119,11 +122,41 @@ int handle_runs(char *path) {
     strcpy(runs_path, path);
     strcat(runs_path, "/runs");
 
-    int r = mkdir(runs_path, 0666);
+    int r = mkdir(runs_path, 0777);
     if (r < 0) {
         perror("Error creating runs dir");
         return -1;
     }
+
+    return 0;
+}
+
+int create_to_cassini() {
+    // Write OK and Taskid
+    int res_fd = open(res_fifo, O_WRONLY);
+    if (res_fd < 0) {
+        perror("Open response pipe");
+        return -1;
+    }
+
+    char buf[4];
+    uint16_t okcode = SERVER_REPLY_OK;
+    uint16_t rescode = nb_tasks;
+
+    okcode = htobe16(okcode);
+    rescode = htobe16(rescode);
+
+    // Copy buf
+    memcpy(buf, &okcode, 2);
+    memcpy(buf, &rescode, 2);
+
+    int w = write(res_fd, buf, 4);
+    if (w < 0) {
+        perror("Error writing error code");
+        return -1;
+    }
+
+    close(res_fd);
 
     return 0;
 }
@@ -173,5 +206,6 @@ int handle_create_task(char *b, int nbtasks) {
         return -1;
     }
 
-    return 0;
+    create_to_cassini(0);
+    return nb_tasks;
 }
