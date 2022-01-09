@@ -140,8 +140,6 @@ int main(int argc, char* argv[]) {
         RES_PIPE_PATH = strcat(RES_PIPE_PATH, RES_PIPE);
     }
 
- 
-
     // Main switch :
     // This is to know which task operation we assigned to Cassini.
     // Each operation will have different requests / responses.
@@ -366,7 +364,6 @@ int main(int argc, char* argv[]) {
             close(RES_FD);
             break;
         }
-
 
         case CLIENT_REQUEST_TERMINATE: {
             int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
@@ -664,7 +661,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Closing the pipes before exiting.
-    
 
     // Free the mallocs
     free(REQ_PIPE_PATH);

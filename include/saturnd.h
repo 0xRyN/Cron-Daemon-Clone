@@ -14,6 +14,8 @@
 #include <unistd.h>
 
 #include "daemon.h"
+#include "operations.h"
 #include "pollfd.h"
+#include "util.h"
 
 #endif
