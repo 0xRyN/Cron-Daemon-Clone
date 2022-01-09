@@ -1,4 +1,4 @@
-#include "terminate.h"
+#include "cassini-terminate.h"
 int terminate(char* REQ_PIPE_PATH, char* RES_PIPE_PATH, uint16_t operation){
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);
         // Convert and write operation
