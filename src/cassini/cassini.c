@@ -194,7 +194,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Closing the pipes before exiting.
-    
 
     // Free the mallocs
     free(REQ_PIPE_PATH);

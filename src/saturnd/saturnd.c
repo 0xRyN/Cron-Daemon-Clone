@@ -1,13 +1,145 @@
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "saturnd.h"
 
-int main(int argc, char* argv[]) {
-    int pid = fork();
-    if (pid == 0) {
-        sleep(1);
-    } else
-        exit(0);
+char abs_path[256];
+char req_fifo[256];
+char res_fifo[256];
+int self_pipe[2];
+
+void handle_sigchld(__attribute__((unused)) int sig) {
+    if ((write(self_pipe[1], "a", 1)) < 0) {
+        perror("Error when writing to self pipe");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void check_tasks() {
+    int fd = open("test-res", O_WRONLY);
+    write(fd, "no", 2);
+    close(fd);
+}
+
+void init_paths() {
+    struct pipes_paths* paths = get_default_paths();
+    strcpy(abs_path, paths->ABS_PATH);
+    strcpy(req_fifo, paths->REQ_PATH);
+    strcpy(res_fifo, paths->RES_PATH);
+    free(paths->REQ_PATH);
+    free(paths->RES_PATH);
+    free(paths->ABS_PATH);
+}
+
+int init_fifos() {
+    _mkdir(abs_path);
+
+    if (mkfifo(req_fifo, 0600) < 0) {
+        return -1;
+    }
+
+    if (mkfifo(res_fifo, 0600) < 0) {
+        return -1;
+    }
+
     return 0;
+}
+
+int get_req_pipe() {
+    int fd = open(req_fifo, O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+        perror("Error when opening request pipe");
+        exit(EXIT_FAILURE);
+    }
+    return fd;
+}
+
+int main() {
+    // Create the daemon
+    create_daemon();
+
+    // Reset umask
+    umask(0000);
+
+    // Create paths
+    init_paths();
+
+    // Init fifos
+    if ((init_fifos()) < 0) {
+        perror("Error when initiating fifos");
+        goto error;
+    }
+
+    // Handle SIGCHLD signal
+    struct sigaction sa;
+    sa.sa_handler = &handle_sigchld;
+    sigaction(SIGCHLD, &sa, NULL);
+
+    // Create self pipe (self pipe trick)
+    if (pipe(self_pipe) < 0) {
+        perror("Self Pipe error");
+        goto error;
+    }
+
+    // Poll will check on request pipe and self_pipe
+    struct pollfd* fds = get_fds(get_req_pipe(), self_pipe[0]);
+
+    while (1) {
+        // Wait for 1 minute
+        int polled = poll(fds, 2, 10000);
+
+        // There's an error
+        if (polled < 0) {
+            perror("Poll error");
+            goto error;
+        }
+
+        // Timeout
+        else if (polled == 0) {
+            check_tasks();
+        }
+
+        // One or more fds recieved an event
+        else {
+            for (int i = 0; i < 2; i++) {
+                uint16_t operation;
+
+                // Events actually occured
+                if (fds[i].revents != 0) {
+                    // Event is POLLIN
+                    if (fds[i].revents & POLLIN) {
+                        int bytes_read = read(fds[i].fd, &operation, 2);
+
+                        // It's not the self-pipe
+                        if (i == 0) {
+                            // And we actually read some data
+                            if (bytes_read < 0) {
+                                perror("Read error");
+                                goto error;
+                            }
+                            handle_operation(operation, fds[i].fd);
+                        }
+                    }
+
+                    // Event is not pollin, probably POLLHUP. Close and open.
+                    else {
+                        close(fds[i].fd);
+                        fds[i].fd = get_req_pipe();
+                    }
+                }
+            }
+        }
+    }
+
+    goto cleanup;
+
+cleanup:
+    free(fds);
+    close(self_pipe[0]);
+    close(self_pipe[1]);
+    return EXIT_SUCCESS;
+
+error:
+    if (errno != 0) perror("main");
+    free(fds);
+    close(self_pipe[0]);
+    close(self_pipe[1]);
+    return EXIT_FAILURE;
 }
