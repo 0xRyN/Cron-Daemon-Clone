@@ -2,6 +2,9 @@
 
 int nb_tasks;
 char *buf;
+char abs_path[256];
+char req_fifo[256];
+char res_fifo[256];
 
 int handle_taskid(char *path) {
     char taskid_path[256];

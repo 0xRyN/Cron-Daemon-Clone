@@ -1,6 +1,9 @@
 #include "saturnd.h"
 
 int self_pipe[2];
+char abs_path[256];
+char req_fifo[256];
+char res_fifo[256];
 
 void handle_sigchld(__attribute__((unused)) int sig) {
     if ((write(self_pipe[1], "a", 1)) < 0) {

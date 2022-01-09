@@ -32,12 +32,10 @@ int init() {
         if ((entry->d_name)[0] != '.') {
             int cur = (int)strtol((entry->d_name), NULL, 10);
             if (cur > max) max = cur;
-            printf("%s\n", entry->d_name);
         }
     }
 
     nb_tasks = max;
-    printf("%i", max);
     return 0;
 }
 
