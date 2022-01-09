@@ -8,5 +8,6 @@ int handle_create_task(char *buf, int nbtasks);
 int handle_timing(char *path);
 int handle_command(char *path);
 int handle_runs(char *path);
+int create_to_cassini();
 
 #endif

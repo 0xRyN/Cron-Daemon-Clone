@@ -1,8 +1,5 @@
 #include "saturnd.h"
 
-char abs_path[256];
-char req_fifo[256];
-char res_fifo[256];
 int self_pipe[2];
 
 void handle_sigchld(__attribute__((unused)) int sig) {
@@ -31,14 +28,17 @@ void init_paths() {
 int init_fifos() {
     _mkdir(abs_path);
 
-    if (mkfifo(req_fifo, 0600) < 0) {
-        return -1;
+    if (access(req_fifo, F_OK) != 0) {
+        if (mkfifo(req_fifo, 0600) < 0) {
+            return -1;
+        }
     }
 
-    if (mkfifo(res_fifo, 0600) < 0) {
-        return -1;
+    if (access(req_fifo, F_OK) != 0) {
+        if (mkfifo(res_fifo, 0600) < 0) {
+            return -1;
+        }
     }
-
     return 0;
 }
 
@@ -93,7 +93,7 @@ int main() {
 
         // Timeout
         else if (polled == 0) {
-            check_tasks();
+            //
         }
 
         // One or more fds recieved an event
@@ -114,7 +114,7 @@ int main() {
                                 perror("Read error");
                                 goto error;
                             }
-                            handle_operation(buf);
+                            int r = handle_operation(buf);
                         }
                     }
 
