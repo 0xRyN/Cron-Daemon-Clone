@@ -10,6 +10,14 @@ int init() {
 
     // HOW IT WORKS : Will check all dirs' names for a maximum.
 
+    if (access(path, F_OK) != 0) {
+        int r = mkdir(path, 0777);
+        if (r < 0) {
+            perror("Mkdir");
+            return -1;
+        }
+    }
+
     DIR *dirp = opendir(path);
     if (dirp == NULL) {
         perror("opendir");
@@ -20,11 +28,16 @@ int init() {
     int max = 0;
 
     while ((entry = readdir(dirp))) {
-        int cur = (int)strtol((entry->d_name), NULL, 10);
-        if (cur > max) max = cur;
+        // If its not . or ..
+        if ((entry->d_name)[0] != '.') {
+            int cur = (int)strtol((entry->d_name), NULL, 10);
+            if (cur > max) max = cur;
+            printf("%s\n", entry->d_name);
+        }
     }
 
     nb_tasks = max;
+    printf("%i", max);
     return 0;
 }
 
@@ -33,13 +46,27 @@ int terminate() {
     return 0;
 }
 
-int handle_operation(uint16_t opcode, int req_fd) {
+int handle_operation(char *b) {
+    char *buf = b;
+    uint16_t opcode;
+    memcpy(&opcode, buf, 2);
+    opcode = be16toh(opcode);
+    printf("%x", opcode);
+    buf += 2;
     // Just after termination
-    if (nb_tasks == -1) init();
+    if (nb_tasks == -1) {
+        int r = init();
+        if (r < 0) {
+            perror("init");
+            return -1;
+        }
+    }
     switch (opcode) {
         case CLIENT_REQUEST_CREATE_TASK:
-            return handle_create_task(nb_tasks, req_fd);
+            return handle_create_task(buf, nb_tasks);
             break;
+        default:
+            printf("never ever\n");
     }
 
     return 0;

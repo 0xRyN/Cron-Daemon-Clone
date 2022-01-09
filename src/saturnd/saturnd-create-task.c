@@ -1,14 +1,14 @@
-#include "create-task.h"
+#include "saturnd-create-task.h"
 
 int nb_tasks;
-int req_fd;
+char *buf;
 
 int handle_taskid(char *path) {
     char taskid_path[256];
     strcpy(taskid_path, path);
-    strcat(taskid_path, "taskid");
+    strcat(taskid_path, "/taskid");
 
-    int taskid_fd = open(taskid_path, O_CREAT | O_WRONLY);
+    int taskid_fd = open(taskid_path, O_CREAT | O_WRONLY, 0777);
     if (taskid_fd < 0) {
         perror("Open taskid");
         return -1;
@@ -27,9 +27,9 @@ int handle_taskid(char *path) {
 int handle_timing(char *path) {
     char timing_path[256];
     strcpy(timing_path, path);
-    strcat(timing_path, "timing");
+    strcat(timing_path, "/timing");
 
-    int timing_fd = open(timing_path, O_CREAT | O_WRONLY);
+    int timing_fd = open(timing_path, O_CREAT | O_WRONLY, 0777);
     if (timing_fd < 0) {
         perror("Open timing");
         return -1;
@@ -37,32 +37,18 @@ int handle_timing(char *path) {
 
     struct timing tm;
 
-    int r_minutes = read(req_fd, &(tm.minutes), 8);
-    if (r_minutes < 0) {
-        perror("Read minutes");
-        return -1;
-    }
+    memcpy(&(tm.minutes), buf, 8);
+    buf += 8;
+    tm.minutes = be64toh(tm.minutes);
 
-    int r_hours = read(req_fd, &(tm.hours), 4);
-    if (r_hours < 0) {
-        perror("Read hours");
-        return -1;
-    }
+    memcpy(&(tm.hours), buf, 4);
+    buf += 4;
+    tm.hours = be32toh(tm.hours);
 
-    int r_days = read(req_fd, &(tm.hours), 1);
-    if (r_days < 0) {
-        perror("Read days");
-        return -1;
-    }
+    memcpy(&(tm.daysofweek), buf, 1);
+    buf += 1;
 
-    char buf[TIMING_TEXT_MIN_BUFFERSIZE];
-    int res = timing_string_from_timing(buf, &tm);
-    if (res < 0) {
-        perror("Timing conversion");
-        return -1;
-    }
-
-    int w_timing = write(timing_fd, buf, 8 + 4 + 1);
+    int w_timing = write(timing_fd, &tm, 8 + 4 + 1);
     if (w_timing < 0) {
         perror("Write to timing file");
         return -1;
@@ -76,54 +62,48 @@ int handle_timing(char *path) {
 int handle_command(char *path) {
     char command_path[256];
     strcpy(command_path, path);
-    strcat(command_path, "command");
+    strcat(command_path, "/command");
 
-    int command_fd = open(command_path, O_CREAT | O_WRONLY);
+    int command_fd = open(command_path, O_CREAT | O_WRONLY, 0777);
     if (command_fd < 0) {
         perror("Open command");
         return -1;
     }
 
     // Giant buffer + Offset for one write syscall
-    char buf[BUFSIZ];
+    char command_buffer[BUFSIZ];
     int offset = 0;
 
     // First read argc, and put it in the buffer
     uint32_t cmd_argc;
-    int r_argc = read(req_fd, &cmd_argc, 4);
-    if (r_argc < 0) {
-        perror("Read argc");
-        return -1;
-    }
-    memcpy(buf + offset, &cmd_argc, 4);
+    memcpy(&cmd_argc, buf, 4);
+    buf += 4;
+    cmd_argc = be32toh(cmd_argc);
+
+    memcpy(command_buffer + offset, &cmd_argc, 4);
     offset += 4;
 
     for (int i = 0; i < (int)cmd_argc; i++) {
         // Read length
 
         uint32_t argv_len;
-        int r_len = read(req_fd, &argv_len, 4);
-        if (r_len < 0) {
-            perror("Read len");
-            return -1;
-        }
+        memcpy(&argv_len, buf, 4);
+        buf += 4;
+        argv_len = be32toh(argv_len);
 
-        memcpy(buf + offset, &argv_len, 4);
+        memcpy(command_buffer + offset, &argv_len, 4);
         offset += 4;
 
         // Read the arg
         char arg[argv_len];
-        int r_arg = read(req_fd, arg, argv_len);
-        if (r_arg < 0) {
-            perror("Read arg");
-            return -1;
-        }
+        memcpy(arg, buf, argv_len);
+        buf += argv_len;
 
-        memcpy(buf + offset, arg, argv_len);
+        memcpy(command_buffer + offset, arg, argv_len);
         offset += argv_len;
     }
 
-    int w_command = write(command_fd, buf, offset);
+    int w_command = write(command_fd, command_buffer, offset);
     if (w_command < 0) {
         perror("Write w_command");
         return -1;
@@ -137,7 +117,7 @@ int handle_command(char *path) {
 int handle_runs(char *path) {
     char runs_path[256];
     strcpy(runs_path, path);
-    strcat(runs_path, "runs");
+    strcat(runs_path, "/runs");
 
     int r = mkdir(runs_path, 0666);
     if (r < 0) {
@@ -148,9 +128,9 @@ int handle_runs(char *path) {
     return 0;
 }
 
-int handle_create_task(int nbtasks, int fd) {
+int handle_create_task(char *b, int nbtasks) {
     // Setup globals
-    req_fd = fd;
+    buf = b;
     nb_tasks = nbtasks;
     nb_tasks++;
 

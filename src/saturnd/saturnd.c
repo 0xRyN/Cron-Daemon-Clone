@@ -53,7 +53,7 @@ int get_req_pipe() {
 
 int main() {
     // Create the daemon
-    create_daemon();
+    // create_daemon();
 
     // Reset umask
     umask(0000);
@@ -83,7 +83,7 @@ int main() {
 
     while (1) {
         // Wait for 1 minute
-        int polled = poll(fds, 2, 10000);
+        int polled = poll(fds, 2, 1000 * 60);
 
         // There's an error
         if (polled < 0) {
@@ -99,13 +99,13 @@ int main() {
         // One or more fds recieved an event
         else {
             for (int i = 0; i < 2; i++) {
-                uint16_t operation;
+                char* buf = malloc(BUFSIZ);
 
                 // Events actually occured
                 if (fds[i].revents != 0) {
                     // Event is POLLIN
                     if (fds[i].revents & POLLIN) {
-                        int bytes_read = read(fds[i].fd, &operation, 2);
+                        int bytes_read = read(fds[i].fd, buf, BUFSIZ);
 
                         // It's not the self-pipe
                         if (i == 0) {
@@ -114,7 +114,7 @@ int main() {
                                 perror("Read error");
                                 goto error;
                             }
-                            handle_operation(operation, fds[i].fd);
+                            handle_operation(buf);
                         }
                     }
 

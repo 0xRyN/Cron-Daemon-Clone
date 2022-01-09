@@ -8,12 +8,14 @@ OBJSATURND = $(SRCSATURND:.c=.o)
 OBJCOMMON = $(SRCCOMMON:.c=.o)
 EXEC = cassini saturnd
 
-all: $(EXEC)
+all: cleanpipe objs $(EXEC)
 
-cassini : $(OBJCASSINI) $(OBJCOMMON)
+objs: $(OBJCOMMON)
+
+cassini : $(OBJCASSINI)
 	$(CC) -o $@ $(OBJCASSINI) $(OBJCOMMON)
 
-saturnd : $(OBJSATURND) $(OBJCOMMON)
+saturnd : $(OBJSATURND) objs
 	$(CC) -o $@ $(OBJSATURND) $(OBJCOMMON)
 
 %.o : %.c
