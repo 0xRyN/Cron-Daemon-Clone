@@ -1,5 +1,5 @@
-#ifndef CREATE_TASK_H
-#define CREATE_TASK_H
+#ifndef CASSINI_CREATE_TASK_H
+#define CASSINI_CREATE_TASK_H
 
 #include <cassini.h>
 

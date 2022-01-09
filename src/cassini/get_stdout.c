@@ -1,4 +1,4 @@
-#include "get_stdout.h"
+#include "cassini-get-stdout.h"
 
 int get_stdout(char* REQ_PIPE_PATH, char* RES_PIPE_PATH, uint16_t operation, uint64_t taskid){
     int REQ_FD = open(REQ_PIPE_PATH, O_WRONLY);

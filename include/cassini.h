@@ -21,18 +21,18 @@
 #include "timing-text-io.h"
 #include "timing.h"
 #include "util.h"
-#include "create_task.h"
-#include "terminate.h"
-#include "remove_task.h"
-#include "get_time_and_exitcodes.h"
-#include "get_stdout.h"
-#include "get_stderr.h"
-#include "list_tasks.h"
+#include "cassini-create-task.h"
+#include "cassini-terminate.h"
+#include "cassini-remove-task.h"
+#include "cassini-get-time-and-exitcodes.h"
+#include "cassini-get-stdout.h"
+#include "cassini-get-stderr.h"
+#include "cassini-list-tasks.h"
 
 #define REQ_PIPE "/saturnd-request-pipe"
 #define RES_PIPE "/saturnd-reply-pipe"
 
-#include "client-request.h"
+#include "cassini-client-request.h"
 #include "server-reply.h"
 
 #endif  // CASSINI
