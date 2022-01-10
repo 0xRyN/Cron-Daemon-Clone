@@ -6,6 +6,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "read-files.h"
+#include "timing-text-io.h"
+
 int handle_check_tasks();
 
 #endif

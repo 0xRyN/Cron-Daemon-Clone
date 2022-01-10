@@ -51,3 +51,12 @@ int command_from_args(struct command* dest, int argc, char* argv[],
 
     // Free the dangling pointers after usage.
 }
+
+// Frees a command struct
+void free_command(struct command* cmd) {
+    for (unsigned int i = 0; i < cmd->argc; i++) {
+        free(cmd->argv[i].value);
+    }
+    free(cmd->argv);
+    free(cmd);
+}
