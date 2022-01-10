@@ -149,18 +149,17 @@ int create_to_cassini() {
         return -1;
     }
 
-    char buf[4];
+    char buf[10];
     uint16_t okcode = SERVER_REPLY_OK;
-    uint16_t rescode = nb_tasks;
-
+    uint64_t rescode = nb_tasks;
     okcode = htobe16(okcode);
-    rescode = htobe16(rescode);
+    rescode = htobe64(rescode);
 
     // Copy buf
     memcpy(buf, &okcode, 2);
-    memcpy(buf, &rescode, 2);
+    memcpy(buf+2, &rescode, 8);
 
-    int w = write(res_fd, buf, 4);
+    int w = write(res_fd, buf, 10);
     if (w < 0) {
         perror("Error writing error code");
         return -1;
