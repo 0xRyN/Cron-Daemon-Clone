@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "timing.h"
 
@@ -13,7 +14,8 @@
 
 int timing_from_strings(struct timing* dest, char* minutes_str, char* hours_str,
                         char* daysofweek_str);
-/* Writes the result in *dest. In case of success, returns 0. In case of failure, returns -1. */
+/* Writes the result in *dest. In case of success, returns 0. In case of
+ * failure, returns -1. */
 
 int timing_string_from_timing(char* dest, const struct timing* timing);
 /* Writes a text representation of timing in the buffer pointed to by dest, and
@@ -33,5 +35,13 @@ int timing_uint_from_string(unsigned long int* dest, const char* string);
 int timing_string_from_field(char* dest, unsigned int min, unsigned int max,
                              uint64_t field);
 int timing_string_from_range(char* dest, unsigned int start, unsigned int stop);
+
+int should_run_now(struct timing* tm);
+
+int should_run_minute(uint64_t minute, int now);
+
+int should_run_hour(uint32_t hour, int now);
+
+int should_run_day(uint8_t day, int now);
 
 #endif  // TIMING_TEXT_IO_H
