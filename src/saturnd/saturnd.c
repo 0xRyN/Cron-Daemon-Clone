@@ -37,7 +37,7 @@ int init_fifos() {
         }
     }
 
-    if (access(req_fifo, F_OK) != 0) {
+    if (access(res_fifo, F_OK) != 0) {
         if (mkfifo(res_fifo, 0600) < 0) {
             return -1;
         }
