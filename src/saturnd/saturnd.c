@@ -12,12 +12,6 @@ void handle_sigchld(__attribute__((unused)) int sig) {
     }
 }
 
-void check_tasks() {
-    int fd = open("test-res", O_WRONLY);
-    write(fd, "no", 2);
-    close(fd);
-}
-
 void init_paths() {
     struct pipes_paths* paths = get_default_paths();
     strcpy(abs_path, paths->ABS_PATH);
@@ -96,7 +90,11 @@ int main() {
 
         // Timeout
         else if (polled == 0) {
-            //
+            int r = handle_check_tasks();
+            if (r < 0) {
+                perror("Checking tasks failed");
+                goto error;
+            }
         }
 
         // One or more fds recieved an event
@@ -118,6 +116,11 @@ int main() {
                                 goto error;
                             }
                             int r = handle_operation(buf);
+                            // We asked saturnd to close (TERMINATE)
+                            if (r == 1) {
+                                goto cleanup;
+                            }
+                            // Saturnd error
                             if (r < 0) {
                                 perror("FATAL ERROR: Saturnd. Exiting");
                                 goto error;

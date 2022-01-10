@@ -157,7 +157,7 @@ int create_to_cassini() {
 
     // Copy buf
     memcpy(buf, &okcode, 2);
-    memcpy(buf+2, &rescode, 8);
+    memcpy(buf + 2, &rescode, 8);
 
     int w = write(res_fd, buf, 10);
     if (w < 0) {
@@ -215,6 +215,5 @@ int handle_create_task(char *b, int nbtasks) {
         return -1;
     }
 
-    create_to_cassini(0);
-    return nb_tasks;
+    return create_to_cassini(0);
 }

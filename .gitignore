@@ -1,3 +1,6 @@
+.idea
+.vs
+.vscode
 run/
 *.dSYM
 *.o

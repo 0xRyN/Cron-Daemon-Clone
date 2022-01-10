@@ -18,5 +18,6 @@ struct command {
 };
 
 int command_from_args(struct command* dest, int argc, char* argv[], int optind);
+void free_command(struct command* cmd);
 
 #endif  // COMMAND_H
