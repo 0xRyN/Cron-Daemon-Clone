@@ -71,6 +71,24 @@ int handle_operation(char *b) {
 
             break;
 
+        case CLIENT_REQUEST_GET_STDOUT:
+
+            return handle_get_stdout(buf);
+
+            break;
+
+        case CLIENT_REQUEST_GET_STDERR:
+
+            return handle_get_stderr(buf);
+
+            break;
+
+        case CLIENT_REQUEST_TERMINATE:
+
+            return -1;
+
+            break;
+
         default:
             printf("never ever\n");
     }

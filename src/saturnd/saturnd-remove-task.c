@@ -70,10 +70,8 @@ int handle_remove_task(char *buf) {
     int r = _rmdir(path);
     if (r < 0) {
         perror("Error when removing task (rmdir)");
-        remove_to_cassini(1);
-        return -1;
+        return remove_to_cassini(1);
     }
 
-    remove_to_cassini(0);
-    return 0;
+    return remove_to_cassini(0);
 }

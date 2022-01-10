@@ -118,6 +118,10 @@ int main() {
                                 goto error;
                             }
                             int r = handle_operation(buf);
+                            if (r < 0) {
+                                perror("FATAL ERROR: Saturnd. Exiting");
+                                goto error;
+                            }
                         }
                     }
 
