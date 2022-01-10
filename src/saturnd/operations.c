@@ -88,6 +88,12 @@ int handle_operation(char *b) {
             return -1;
 
             break;
+        
+        case CLIENT_REQUEST_LIST_TASKS:
+            
+            return handle_list_tasks();
+
+            break;
 
         default:
             printf("never ever\n");
