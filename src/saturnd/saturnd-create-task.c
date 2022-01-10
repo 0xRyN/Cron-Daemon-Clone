@@ -6,6 +6,8 @@ char abs_path[256];
 char req_fifo[256];
 char res_fifo[256];
 
+// Create taskid file
+
 int handle_taskid(char *path) {
     char taskid_path[256];
     strcpy(taskid_path, path);
@@ -26,6 +28,8 @@ int handle_taskid(char *path) {
 
     return 0;
 }
+
+// Create timing file
 
 int handle_timing(char *path) {
     char timing_path[256];
@@ -61,6 +65,8 @@ int handle_timing(char *path) {
 
     return 0;
 }
+
+// Create command file
 
 int handle_command(char *path) {
     char command_path[256];
@@ -117,6 +123,8 @@ int handle_command(char *path) {
     return 0;
 }
 
+// Create runs directory
+
 int handle_runs(char *path) {
     char runs_path[256];
     strcpy(runs_path, path);
@@ -130,6 +138,8 @@ int handle_runs(char *path) {
 
     return 0;
 }
+
+// Send info back to cassini
 
 int create_to_cassini() {
     // Write OK and Taskid

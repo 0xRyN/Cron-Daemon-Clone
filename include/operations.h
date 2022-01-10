@@ -18,6 +18,8 @@
 #include "cstring.h"
 #include "global.h"
 #include "saturnd-create-task.h"
+#include "saturnd-get-stderr.h"
+#include "saturnd-get-stdout.h"
 #include "saturnd-remove-task.h"
 #include "server-reply.h"
 #include "timing-text-io.h"
