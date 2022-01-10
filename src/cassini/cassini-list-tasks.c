@@ -36,9 +36,7 @@ int requestClientRequestTask(char* REQ_PIPE_PATH, char* RES_PIPE_PATH,
     uint32_t command_argc;  // Command.argc
 
     read(RES_FD, &nbtasks, sizeof(nbtasks));
-    printf("%d\n", nbtasks);
     nbtasks = be32toh(nbtasks);
-    printf("%d\n", nbtasks);
 
     // If tasks exists, display them in the protocol's format
     if (nbtasks > 0) {
