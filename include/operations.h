@@ -24,6 +24,7 @@
 #include "server-reply.h"
 #include "timing-text-io.h"
 #include "util.h"
+#include "saturnd-list-tasks.h"
 
 int handle_operation(char *buf);
 
