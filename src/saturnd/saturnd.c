@@ -1,7 +1,5 @@
 #include "saturnd.h"
 
-#include "run-task.h"
-
 int self_pipe[2];
 char abs_path[256];
 char req_fifo[256];
@@ -106,8 +104,9 @@ int main() {
 
         // There's an error
         if (polled < 0) {
-            perror("Poll error");
-            goto error;
+            printf("Interrupted by signal\n");
+            // perror("Poll error");
+            // goto error;
         }
 
         // Timeout
@@ -117,7 +116,12 @@ int main() {
             //     perror("Checking tasks failed");
             //     goto error;
             // }
-            handle_run_task(5);
+            /*int r = handle_check_tasks();
+            if (r < 0) {
+                perror("handle check tasks");
+                return -1;
+            }*/
+            handle_run_task(1);
         }
 
         // One or more fds recieved an event

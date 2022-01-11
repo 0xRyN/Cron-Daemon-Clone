@@ -17,6 +17,7 @@
 #include "global.h"
 #include "operations.h"
 #include "pollfd.h"
+#include "run-task.h"
 #include "saturnd-check-tasks.h"
 #include "util.h"
 

@@ -12,7 +12,7 @@ int get_cur_run(int taskid) {
     }
     struct dirent *entry;
 
-    int max = 1;
+    int max = 0;
 
     while ((entry = readdir(dirp))) {
         // If its not . or ..
@@ -66,27 +66,27 @@ int dup_stderr(int taskid) {
 }
 
 int log_time(int taskid) {
-    printf("hello\n");
     int cur = get_cur_run(taskid);
     if (cur < 0) {
         perror("Log time - cur runs has failed");
         return -1;
     }
+    cur++;
 
     char path[256];
     sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d", get_username(), taskid,
             cur);
 
-    int res_mkdir = mkdir(path, 0777);
-    if (res_mkdir < 0) {
-        perror("Mkdir log run");
-        return -1;
+    if (access(path, F_OK) != 0) {
+        int res_mkdir = mkdir(path, 0777);
+        if (res_mkdir < 0) {
+            perror("Mkdir log run");
+            return -1;
+        }
     }
 
-    printf("hello 2\n");
-
     char path_time[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d/time", get_username(),
+    sprintf(path_time, "/tmp/%s/saturnd/tasks/%d/runs/%d/time", get_username(),
             taskid, cur);
 
     int fd = open(path_time, O_CREAT | O_WRONLY, 0777);
@@ -118,8 +118,6 @@ int log_exitcode(int taskid, int code) {
     char path_exitcode[256];
     sprintf(path_exitcode, "/tmp/%s/saturnd/tasks/%d/runs/%d/exitcode",
             get_username(), taskid, cur);
-
-    printf("%s\n", path_exitcode);
 
     int fd = open(path_exitcode, O_CREAT | O_WRONLY, 0777);
     if (fd < 0) {
