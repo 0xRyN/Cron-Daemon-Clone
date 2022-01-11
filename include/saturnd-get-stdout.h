@@ -4,6 +4,6 @@
 #include "operations.h"
 
 int handle_get_stdout(char *buf);
-int stdout_to_cassini(int hasFailed, int taskDoesntExist);
+int stdout_to_cassini(int hasFailed, int taskDoesntExist, int offset);
 
 #endif
