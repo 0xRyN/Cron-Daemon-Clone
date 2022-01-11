@@ -95,6 +95,12 @@ int handle_operation(char *b) {
 
             break;
 
+        case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:
+
+            return handle_get_time_exitcode(buf);
+
+            break;
+
         default:
             printf("never ever\n");
     }
