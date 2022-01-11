@@ -89,7 +89,7 @@ int handle_list_tasks() {
     // Sort the array
     // PROFIT!
     qsort(index_arr, nbtasks, sizeof(int), compare);
-
+    char *username = get_username();
     for (int i = 0; i < nbtasks; i++) {
         int index = index_arr[i];
         // ----------------------------------------//
@@ -98,7 +98,6 @@ int handle_list_tasks() {
 
         // OPEN TASKID
         char taskid_path[256];
-        char *username = get_username();
         sprintf(taskid_path, "/tmp/%s/saturnd/tasks/%i/taskid", username,
                 index);
 
@@ -156,9 +155,8 @@ int handle_list_tasks() {
 
         // OPEN COMMAND
         char command_path[256];
-        sprintf(command_path, "/tmp/%s/saturnd/tasks/%i/command",
-                username, index);
-        free(username);
+        sprintf(command_path, "/tmp/%s/saturnd/tasks/%i/command", username,
+                index);
 
         // FILL COMMAND
         struct command *cmd = malloc(sizeof(struct command));
@@ -176,13 +174,14 @@ int handle_list_tasks() {
 
         for (int i = 0; i < (int)(cmd->argc); i++) {
             struct cstring *iterator = cmd->argv;
-            uint32_t res_len = htobe32(iterator[i].length+1);
+            uint32_t res_len = htobe32(iterator[i].length + 1);
             memcpy(buf + offset, &res_len, 4);
             offset += 4;
 
-            memcpy(buf + offset, iterator[i].value, iterator[i].length+1);
-            offset += iterator[i].length+1;
+            memcpy(buf + offset, iterator[i].value, iterator[i].length + 1);
+            offset += iterator[i].length + 1;
         }
     }
+    free(username);
     return list_to_cassini(offset);
 }
