@@ -65,7 +65,9 @@ int handle_remove_task(char *buf) {
     taskid = be64toh(taskid);
 
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%ld", get_username(), taskid);
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks/%ld", username, taskid);
+    free(username);
 
     int r = _rmdir(path);
     if (r < 0) {

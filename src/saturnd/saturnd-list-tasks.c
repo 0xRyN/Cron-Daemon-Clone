@@ -13,7 +13,9 @@ int compare(const void *a, const void *b) { return (*(int *)a - *(int *)b); }
 
 int count_tasks() {
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks", get_username());
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks", username);
+    free(username);
 
     DIR *dirp = opendir(path);
     if (dirp == NULL) {
@@ -96,7 +98,8 @@ int handle_list_tasks() {
 
         // OPEN TASKID
         char taskid_path[256];
-        sprintf(taskid_path, "/tmp/%s/saturnd/tasks/%i/taskid", get_username(),
+        char *username = get_username();
+        sprintf(taskid_path, "/tmp/%s/saturnd/tasks/%i/taskid", username,
                 index);
 
         // FILL TASKID
@@ -121,7 +124,7 @@ int handle_list_tasks() {
 
         // OPEN TIMING
         char timing_path[256];
-        sprintf(timing_path, "/tmp/%s/saturnd/tasks/%i/timing", get_username(),
+        sprintf(timing_path, "/tmp/%s/saturnd/tasks/%i/timing", username,
                 index);
 
         // FILL TIMING
@@ -154,7 +157,8 @@ int handle_list_tasks() {
         // OPEN COMMAND
         char command_path[256];
         sprintf(command_path, "/tmp/%s/saturnd/tasks/%i/command",
-                get_username(), index);
+                username, index);
+        free(username);
 
         // FILL COMMAND
         struct command *cmd = malloc(sizeof(struct command));

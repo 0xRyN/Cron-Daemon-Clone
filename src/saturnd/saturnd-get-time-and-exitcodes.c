@@ -8,7 +8,9 @@ char buf[BUFSIZ];
 
 int get_nbruns(int taskId) {
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%i/runs", get_username(), taskId);
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks/%i/runs", username, taskId);
+    free(username);
 
     DIR *dirp = opendir(path);
     if (dirp == NULL) {
@@ -38,10 +40,11 @@ int iterate(int taskid, int off) {
     memcpy(buf + offset, &res_n, 4);
     offset += 4;
 
+    char *username = get_username();
     for (int i = 1; i <= n; i++) {
         char time_path[256];
         sprintf(time_path, "/tmp/%s/saturnd/tasks/%i/runs/%i/time",
-                get_username(), taskid, i);
+                username, taskid, i);
 
         int time_fd = open(time_path, O_RDONLY);
         if (time_fd < 0) {
@@ -64,7 +67,7 @@ int iterate(int taskid, int off) {
 
         char exitcode_path[256];
         sprintf(exitcode_path, "/tmp/%s/saturnd/tasks/%i/runs/%i/exitcode",
-                get_username(), taskid, i);
+                username, taskid, i);
 
         int exitcode_fd = open(exitcode_path, O_RDONLY);
         if (exitcode_fd < 0) {
@@ -85,6 +88,7 @@ int iterate(int taskid, int off) {
         memcpy(buf + offset, &exitcode, 2);
         offset += 2;
     }
+    free(username);
     return time_exitcode_to_cassini(0, offset);
 }
 
@@ -141,8 +145,9 @@ int handle_get_time_exitcode(char *b) {
     taskid = be64toh(taskid);
 
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%ld", get_username(), taskid);
-
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks/%ld", username, taskid);
+    free(username);
     // If path to task doesnt exist
     if (access(path, F_OK) != 0) {
         return time_exitcode_to_cassini(1, 0);

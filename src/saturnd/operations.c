@@ -6,7 +6,9 @@ int nb_tasks = -1;
 int init() {
     // Path to tasks
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks", get_username());
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks", username);
+    free(username);
 
     // HOW IT WORKS : Will check all dirs' names for a maximum.
 

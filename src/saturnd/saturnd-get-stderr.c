@@ -56,7 +56,9 @@ int handle_get_stderr(char *buf) {
     int offset = 0;
 
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%ld/", get_username(), taskid);
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks/%ld/", username, taskid);
+    free(username);
 
     // Task directory doesn't exit
     if (access(path, F_OK) != 0) {

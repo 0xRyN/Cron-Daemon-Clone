@@ -178,7 +178,9 @@ int handle_create_task(char *b, int nbtasks) {
 
     // Create directory for new task
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d", get_username(), nb_tasks);
+    char *username = get_username();
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d", username, nb_tasks);
+    free(username);
     _mkdir(path);
 
     // Inside the directory, create TaskId, Timing, Command
