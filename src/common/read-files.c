@@ -1,3 +1,4 @@
+//read-files.c
 #include "read-files.h"
 
 int get_timing_from_file(struct timing *time, char *path) {
@@ -51,6 +52,10 @@ int get_taskid_from_file(uint64_t *tId, char *path) {
 
 int get_command_from_file(struct command *cmd, char *path) {
     int fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        perror("error opening command");
+        return -1;
+    }
 
     // First read the commands number of arguments
     uint32_t cmd_agrc;
