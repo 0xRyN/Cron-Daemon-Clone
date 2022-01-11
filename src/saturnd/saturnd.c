@@ -100,7 +100,7 @@ int main() {
 
     while (1) {
         // Wait for 1 minute
-        int polled = poll(fds, 2, 1000 * 10);
+        int polled = poll(fds, 2, 1000 * 60);
 
         // There's an error
         if (polled < 0) {
@@ -121,6 +121,8 @@ int main() {
                 perror("handle check tasks");
                 return -1;
             }
+            //handle_run_task(2);
+
 
         }
 
