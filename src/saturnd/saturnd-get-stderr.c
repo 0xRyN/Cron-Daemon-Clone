@@ -2,7 +2,7 @@
 
 char output[BUFSIZ];
 
-int stderr_to_cassini(int hasFailed, int taskDoesntExist) {
+int stderr_to_cassini(int hasFailed, int taskDoesntExist, int offset) {
     int res_fd;
 
     res_fd = open(res_fifo, O_WRONLY);
@@ -35,25 +35,7 @@ int stderr_to_cassini(int hasFailed, int taskDoesntExist) {
 
     // Command hasn't failed
     else {
-        // Put replycode in buffer
-        int offset = 0;
-        char res_buf[BUFSIZ];
-        uint16_t reptype = SERVER_REPLY_OK;
-        reptype = htobe16(reptype);
-        memcpy(res_buf, &reptype, 2);
-        offset += 2;
-
-        // Read stderr and put it in buffer
-
-        // First the length of the string
-        uint32_t len = strlen(output);
-        memcpy(res_buf + offset, &len, 4);
-        offset += 4;
-
-        memcpy(res_buf + offset, output, len);
-        offset += len;
-
-        int w = write(res_fd, res_buf, offset);
+        int w = write(res_fd, output, offset);
         if (w < 0) {
             perror("Write to stderr");
             return -1;
@@ -71,19 +53,21 @@ int handle_get_stderr(char *buf) {
     buf += 8;
     taskid = be64toh(taskid);
 
+    int offset = 0;
+
     char path[256];
     sprintf(path, "/tmp/%s/saturnd/tasks/%ld/", get_username(), taskid);
 
     // Task directory doesn't exit
     if (access(path, F_OK) != 0) {
-        return stderr_to_cassini(1, 1);
+        return stderr_to_cassini(1, 1, 0);
     }
 
     strcat(path, "stderr");
 
     // stderr file not initialized (Task not run)
     if (access(path, F_OK) != 0) {
-        return stderr_to_cassini(1, 0);
+        return stderr_to_cassini(1, 0, 0);
     }
 
     int fd = open(path, O_RDONLY);
@@ -92,13 +76,28 @@ int handle_get_stderr(char *buf) {
         return -1;
     }
 
+    uint16_t reptype = SERVER_REPLY_OK;
+    reptype = htobe16(reptype);
+    memcpy(output, &reptype, 2);
+    offset += 2;
+
     // We consider max output = BUFSIZ
 
-    int bytes_read = read(fd, output, BUFSIZ);
-    output[bytes_read] = '\0';
+    char temp[1024];
+
+    int bytes_read = read(fd, temp, BUFSIZ);
+
+    // offset += bytes_read;
+
+    uint32_t len = htobe32(bytes_read);
+    memcpy(output + offset, &len, 4);
+    offset += 4;
+
+    memcpy(output + offset, temp, bytes_read);
+    offset += bytes_read;
 
     close(fd);
 
     // Now, we write the output to cassini
-    return stderr_to_cassini(0, 0);
+    return stderr_to_cassini(0, 0, offset);
 }
