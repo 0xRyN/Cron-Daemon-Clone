@@ -67,7 +67,7 @@ void setup_self_pipes() {
 
 int main() {
     // Create the daemon
-    // create_daemon();
+    create_daemon();
 
     // Reset umask
     umask(0000);
