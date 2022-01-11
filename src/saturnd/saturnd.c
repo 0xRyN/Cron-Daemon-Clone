@@ -116,12 +116,12 @@ int main() {
             //     perror("Checking tasks failed");
             //     goto error;
             // }
-            /*int r = handle_check_tasks();
+            int r = handle_check_tasks();
             if (r < 0) {
                 perror("handle check tasks");
                 return -1;
-            }*/
-            handle_run_task(6);
+            }
+
         }
 
         // One or more fds recieved an event

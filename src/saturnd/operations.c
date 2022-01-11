@@ -59,42 +59,49 @@ int handle_operation(char *b) {
 
     // Handle each opcode accordingly
     switch (opcode) {
+        // Perfect
         case CLIENT_REQUEST_CREATE_TASK:
 
             return handle_create_task(buf, nb_tasks);
 
             break;
 
+        // Perfect
         case CLIENT_REQUEST_REMOVE_TASK:
 
             return handle_remove_task(buf);
 
             break;
 
+        // Perfect
         case CLIENT_REQUEST_GET_STDOUT:
 
             return handle_get_stdout(buf);
 
             break;
 
+        // Perfect
         case CLIENT_REQUEST_GET_STDERR:
 
             return handle_get_stderr(buf);
 
             break;
 
+        // Perfect
         case CLIENT_REQUEST_TERMINATE:
 
             return 1;
 
             break;
 
+        // Small error - one extra char sometimes
         case CLIENT_REQUEST_LIST_TASKS:
 
             return handle_list_tasks();
 
             break;
 
+        // Perfect
         case CLIENT_REQUEST_GET_TIMES_AND_EXITCODES:
 
             return handle_get_time_exitcode(buf);
