@@ -173,12 +173,12 @@ int handle_list_tasks() {
 
         for (int i = 0; i < (int)(cmd->argc); i++) {
             struct cstring *iterator = cmd->argv;
-            uint32_t res_len = htobe32(iterator[i].length);
+            uint32_t res_len = htobe32(iterator[i].length+1);
             memcpy(buf + offset, &res_len, 4);
             offset += 4;
 
-            memcpy(buf + offset, iterator[i].value, iterator[i].length);
-            offset += iterator[i].length;
+            memcpy(buf + offset, iterator[i].value, iterator[i].length+1);
+            offset += iterator[i].length+1;
         }
     }
     return list_to_cassini(offset);
