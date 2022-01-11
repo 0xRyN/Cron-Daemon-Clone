@@ -1,6 +1,7 @@
 #include "timing-text-io.h"
 
-/* Writes the result in *dest. In case of success, returns 0. In case of failure, returns -1. */
+/* Writes the result in *dest. In case of success, returns 0. In case of
+ * failure, returns -1. */
 int timing_from_strings(struct timing* dest, char* minutes_str, char* hours_str,
                         char* daysofweek_str) {
     uint64_t field;
@@ -174,4 +175,39 @@ int timing_string_from_range(char* dest, unsigned int start,
     else
         sprintf_result = sprintf(dest, "%u-%u", start, stop);
     return sprintf_result;
+}
+
+int should_run_day(uint8_t day, int now) {
+    // If it should run, then the bit at the now'th position should be on
+    // Means it will equal 1 mod 2
+    // Returns 0 if it should not run
+    return ((day >> now) % 2);
+}
+
+int should_run_hour(uint32_t hour, int now) {
+    // If it should run, then the bit at the now'th position should be on
+    // Means it will equal 1 mod 2
+    // Returns 0 if it should not run
+    return ((hour >> now) % 2);
+}
+
+int should_run_minute(uint64_t minute, int now) {
+    // If it should run, then the bit at the now'th position should be on
+    // Means it will equal 1 mod 2
+    // Returns 0 if it should not run
+    return ((minute >> now) % 2);
+}
+
+int should_run_now(struct timing* tm) {
+    time_t now = time(NULL);
+    struct tm* time = localtime(&now);
+
+    // 0 = Dimanche 6 = Samedi
+    int day = time->tm_wday;
+    int hour = time->tm_hour;
+    int minute = time->tm_min;
+
+    return (should_run_day(tm->daysofweek, day) &
+            should_run_hour(tm->hours, hour) &
+            should_run_minute(tm->minutes, minute));
 }

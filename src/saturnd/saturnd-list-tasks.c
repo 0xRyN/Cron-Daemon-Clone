@@ -79,6 +79,13 @@ int handle_list_tasks() {
     offset += 4;
 
     // Sort index array
+    // The idea of a millénaire !!!
+    // Since readdir doesn't guarantee alphabetic order,
+    // and we need to send to send first task first,
+    // First iterate over all the dir
+    // Put all the indexes of the directories in an int array
+    // Sort the array
+    // PROFIT!
     qsort(index_arr, nbtasks, sizeof(int), compare);
 
     for (int i = 0; i < nbtasks; i++) {

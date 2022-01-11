@@ -6,10 +6,11 @@ char req_fifo[256];
 char res_fifo[256];
 
 void handle_sigchld(__attribute__((unused)) int sig) {
-    if ((write(self_pipe[1], "a", 1)) < 0) {
-        perror("Error when writing to self pipe");
-        exit(EXIT_FAILURE);
-    }
+    int savedErrno; /* In case we change 'errno' */
+
+    savedErrno = errno;
+    if (write(self_pipe[1], "x", 1) == -1 && errno != EAGAIN) exit(-1);
+    errno = savedErrno;
 }
 
 void init_paths() {
@@ -48,6 +49,22 @@ int get_req_pipe() {
     return fd;
 }
 
+// Self pipe from man7
+
+void setup_self_pipes() {
+    int flags;
+
+    flags = fcntl(self_pipe[0], F_GETFL);
+    if (flags == -1) exit(-1);
+    flags |= O_NONBLOCK; /* Make read end nonblocking */
+    if (fcntl(self_pipe[0], F_SETFL, flags) == -1) exit(-1);
+
+    flags = fcntl(self_pipe[1], F_GETFL);
+    if (flags == -1) exit(-1);
+    flags |= O_NONBLOCK; /* Make write end nonblocking */
+    if (fcntl(self_pipe[1], F_SETFL, flags) == -1) exit(-1);
+}
+
 int main() {
     // Create the daemon
     // create_daemon();
@@ -67,6 +84,7 @@ int main() {
     // Handle SIGCHLD signal
     struct sigaction sa;
     sa.sa_handler = &handle_sigchld;
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGCHLD, &sa, NULL);
 
     // Create self pipe (self pipe trick)
@@ -75,26 +93,35 @@ int main() {
         goto error;
     }
 
+    setup_self_pipes();
+
     // Poll will check on request pipe and self_pipe
     struct pollfd* fds = get_fds(get_req_pipe(), self_pipe[0]);
 
     while (1) {
         // Wait for 1 minute
-        int polled = poll(fds, 2, 1000 * 60);
+        int polled = poll(fds, 2, 1000 * 10);
 
         // There's an error
         if (polled < 0) {
-            perror("Poll error");
-            goto error;
+            printf("Interrupted by signal\n");
+            // perror("Poll error");
+            // goto error;
         }
 
         // Timeout
         else if (polled == 0) {
-            int r = handle_check_tasks();
+            // int r = handle_check_tasks();
+            // if (r < 0) {
+            //     perror("Checking tasks failed");
+            //     goto error;
+            // }
+            /*int r = handle_check_tasks();
             if (r < 0) {
-                perror("Checking tasks failed");
-                goto error;
-            }
+                perror("handle check tasks");
+                return -1;
+            }*/
+            handle_run_task(1);
         }
 
         // One or more fds recieved an event

@@ -1,7 +1,7 @@
 #ifndef SATURND_H
 #define SATURND_H
 
-#define _POSIX_C_SOURCE 199309L
+#define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
 #include <fcntl.h>
@@ -17,6 +17,7 @@
 #include "global.h"
 #include "operations.h"
 #include "pollfd.h"
+#include "run-task.h"
 #include "saturnd-check-tasks.h"
 #include "util.h"
 
