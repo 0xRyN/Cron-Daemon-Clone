@@ -167,7 +167,11 @@ int run(char **cmd, int taskid) {
                 perror("Log time");
                 return -1;
             }
-            execvp(cmd[0], cmd);
+            int return_exec = execvp(cmd[0], cmd);
+            if(return_exec < 0){
+                perror("execvp error");
+                exit(-1);
+            }
         }
 
         else {  // Son
@@ -178,6 +182,7 @@ int run(char **cmd, int taskid) {
         }
         exit(0);
     }
+    waitpid(pid1,NULL,WNOHANG);
     // Do we want to wait here ? NO
     return 0;
 }

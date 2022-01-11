@@ -100,11 +100,11 @@ int main() {
 
     while (1) {
         // Wait for 1 minute
-        int polled = poll(fds, 2, 1000 * 60);
+        int polled = poll(fds, 2, 1000 * 10);
 
         // There's an error
         if (polled < 0) {
-            printf("Interrupted by signal\n");
+            printf("A process just ran (SIGCHLD signal recieved)\n");
             // perror("Poll error");
             // goto error;
         }

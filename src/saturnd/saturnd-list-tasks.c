@@ -90,7 +90,6 @@ int handle_list_tasks() {
 
     for (int i = 0; i < nbtasks; i++) {
         int index = index_arr[i];
-        printf("index is : %i\n", index);
         // ----------------------------------------//
         //                   Taskid                //
         // ----------------------------------------//
