@@ -3,9 +3,7 @@
 // Returns the number of runs already done
 int get_cur_run(int taskid) {
     char path[256];
-    char *username = get_username();
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs", username, taskid);
-    free(username);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs", get_username(), taskid);
 
     DIR *dirp = opendir(path);
     if (dirp == NULL) {
@@ -29,9 +27,8 @@ int get_cur_run(int taskid) {
 
 int dup_stdout(int taskid) {
     char path[256];
-    char *username = get_username();
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/stdout", username, taskid);
-    free(username);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/stdout", get_username(), taskid);
+
     int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0777);
     if (fd < 0) {
         perror("Opening stdout");
@@ -50,9 +47,8 @@ int dup_stdout(int taskid) {
 
 int dup_stderr(int taskid) {
     char path[256];
-    char *username = get_username();
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/stderr", username, taskid);
-    free(username);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/stderr", get_username(), taskid);
+
     int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0777);
     if (fd < 0) {
         perror("Opening stderr");
@@ -78,8 +74,7 @@ int log_time(int taskid) {
     cur++;
 
     char path[256];
-    char *username = get_username();
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d", username, taskid,
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d", get_username(), taskid,
             cur);
 
     if (access(path, F_OK) != 0) {
@@ -91,9 +86,8 @@ int log_time(int taskid) {
     }
 
     char path_time[256];
-    sprintf(path_time, "/tmp/%s/saturnd/tasks/%d/runs/%d/time", username,
+    sprintf(path_time, "/tmp/%s/saturnd/tasks/%d/runs/%d/time", get_username(),
             taskid, cur);
-    free(username);
 
     int fd = open(path_time, O_CREAT | O_WRONLY, 0777);
     if (fd < 0) {
@@ -122,10 +116,8 @@ int log_exitcode(int taskid, int code) {
     }
 
     char path_exitcode[256];
-    char *username = get_username();
     sprintf(path_exitcode, "/tmp/%s/saturnd/tasks/%d/runs/%d/exitcode",
-            username, taskid, cur);
-    free(username);
+            get_username(), taskid, cur);
 
     int fd = open(path_exitcode, O_CREAT | O_WRONLY, 0777);
     if (fd < 0) {
@@ -155,44 +147,44 @@ int log_exitcode(int taskid, int code) {
 
 int run(char **cmd, int taskid) {
     int pid1 = fork();
-    if (pid1 == 0) {  // Son
-        int pid2 = fork();
-        if (pid2 == 0) {  // Son of son
-            // Dup on stdout stderr
-            int res_stdout = dup_stdout(taskid);
-            if (res_stdout < 0) {
-                perror("stdout dup");
-                return -1;
-            }
-
-            int res_stderr = dup_stderr(taskid);
-            if (res_stderr < 0) {
-                perror("stderr dup");
-                return -1;
-            }
-            int res_log = log_time(taskid);
-            if (res_log < 0) {
-                perror("Log time");
-                return -1;
-            }
-            int return_exec = execvp(cmd[0], cmd);
-            if(return_exec < 0){
-                perror("execvp error");
-                exit(-1);
-            }
+    if (pid1 == 0) {  // Son of son
+        // Dup on stdout stderr
+        int res_stdout = dup_stdout(taskid);
+        if (res_stdout < 0) {
+            perror("stdout dup");
+            return -1;
         }
 
-        else {  // Son
-            int exitcode;
-            wait(&exitcode);
-            log_exitcode(taskid, exitcode);
-            exit(0);
+        int res_stderr = dup_stderr(taskid);
+        if (res_stderr < 0) {
+            perror("stderr dup");
+            return -1;
         }
+        int res_log = log_time(taskid);
+        if (res_log < 0) {
+            perror("Log time");
+            return -1;
+        }
+        int return_exec = execvp(cmd[0], cmd);
+        if (return_exec < 0) {
+            perror("execvp error");
+            exit(-1);
+        }
+    }
+
+    else {  // Son
+        int exitcode;
+        wait(&exitcode);
+        log_exitcode(taskid, exitcode);
         exit(0);
     }
-    waitpid(pid1,NULL,WNOHANG);
-    // Do we want to wait here ? NO
     return 0;
+}
+
+void arg_printer(char **argv) {
+    for (; *argv != 0; ++argv) {
+        printf("Arg %s\n", *argv);
+    }
 }
 
 int handle_run_task(int tid) {
@@ -204,9 +196,7 @@ int handle_run_task(int tid) {
     // THE SON WILL WAIT FOR IT'S SON(WHICH WILL RUN THE COMMAND)
 
     char path[256];
-    char *username = get_username();
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/command", username, tid);
-    free(username);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/command", get_username(), tid);
 
     struct command *cmd = malloc(sizeof(struct command));
     int r = get_command_from_file(cmd, path);
@@ -221,9 +211,14 @@ int handle_run_task(int tid) {
     for (i = 0; i < (int)cmd->argc; i++) {
         // NEED TO FREE
         command_buf[i] = malloc(cmd->argv[i].length + 1);
-        strncpy(command_buf[i], cmd->argv[i].value, cmd->argv[i].length);
+        strcpy(command_buf[i], cmd->argv[i].value);
+        command_buf[i][cmd->argv[i].length] = '\0';
     }
     command_buf[i] = NULL;
+
+    // arg_printer(command_buf);
+
+    // exit(0);
 
     return run(command_buf, tid);
 }
