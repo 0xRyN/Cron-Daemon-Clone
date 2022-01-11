@@ -4,7 +4,7 @@ char abs_path[256];
 char req_fifo[256];
 char res_fifo[256];
 
-char buf[BUFSIZ];
+char* list_buf;
 
 int index_arr[100];
 
@@ -44,7 +44,7 @@ int list_to_cassini(int off) {
         return -1;
     }
 
-    int bytes_written = write(res_fd, buf, off);
+    int bytes_written = write(res_fd, list_buf, off);
     if (bytes_written < 0) {
         perror("Error writing to res pipe from list");
         return -1;
@@ -56,6 +56,9 @@ int list_to_cassini(int off) {
 }
 
 int handle_list_tasks() {
+    char reset_buf[BUFSIZ];
+    list_buf = reset_buf;
+    printf("Buf is : %s\n",list_buf);
     // GLOBAL OFFSET
     int offset = 0;
 
@@ -64,7 +67,7 @@ int handle_list_tasks() {
     uint16_t okcode = SERVER_REPLY_OK;
     okcode = htobe16(okcode);
 
-    memcpy(buf + offset, &okcode, 2);
+    memcpy(list_buf + offset, &okcode, 2);
     offset += 2;
 
     // Write NB Tasks
@@ -77,7 +80,7 @@ int handle_list_tasks() {
 
     uint32_t res_nbtasks = htobe32(nbtasks);
 
-    memcpy(buf + offset, &res_nbtasks, 4);
+    memcpy(list_buf + offset, &res_nbtasks, 4);
     offset += 4;
 
     // Sort index array
@@ -112,7 +115,7 @@ int handle_list_tasks() {
 
         *tid = htobe64(*tid);
 
-        memcpy(buf + offset, tid, 8);
+        memcpy(list_buf + offset, tid, 8);
         offset += 8;
 
         free(tid);
@@ -138,13 +141,13 @@ int handle_list_tasks() {
         tm->minutes = htobe64(tm->minutes);
         tm->hours = htobe32(tm->hours);
 
-        memcpy(buf + offset, &(tm->minutes), 8);
+        memcpy(list_buf + offset, &(tm->minutes), 8);
         offset += 8;
 
-        memcpy(buf + offset, &(tm->hours), 4);
+        memcpy(list_buf + offset, &(tm->hours), 4);
         offset += 4;
 
-        memcpy(buf + offset, &(tm->daysofweek), 1);
+        memcpy(list_buf + offset, &(tm->daysofweek), 1);
         offset += 1;
 
         free(tm);
@@ -169,16 +172,16 @@ int handle_list_tasks() {
 
         uint32_t res_argc = htobe32(cmd->argc);
 
-        memcpy(buf + offset, &res_argc, 4);
+        memcpy(list_buf + offset, &res_argc, 4);
         offset += 4;
 
         for (int i = 0; i < (int)(cmd->argc); i++) {
             struct cstring *iterator = cmd->argv;
             uint32_t res_len = htobe32(iterator[i].length + 1);
-            memcpy(buf + offset, &res_len, 4);
+            memcpy(list_buf + offset, &res_len, 4);
             offset += 4;
 
-            memcpy(buf + offset, iterator[i].value, iterator[i].length + 1);
+            memcpy(list_buf + offset, iterator[i].value, iterator[i].length + 1);
             offset += iterator[i].length + 1;
         }
     }

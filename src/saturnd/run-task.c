@@ -185,7 +185,7 @@ int run(char **cmd, int taskid) {
         log_exitcode(taskid, exitcode);
         exit(0);
     }
-    return 0;
+     exit(0);
 }
 
 void arg_printer(char **argv) {
