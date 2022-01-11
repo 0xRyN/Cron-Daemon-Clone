@@ -4,7 +4,7 @@ char abs_path[256];
 char req_fifo[256];
 char res_fifo[256];
 
-char* list_buf;
+char *list_buf;
 
 int index_arr[100];
 
@@ -58,8 +58,8 @@ int list_to_cassini(int off) {
 int handle_list_tasks() {
     char reset_buf[BUFSIZ];
     list_buf = reset_buf;
-    printf("Buf is : %s\n",list_buf);
-    // GLOBAL OFFSET
+    // printf("Buf is : %s\n",list_buf);
+    //  GLOBAL OFFSET
     int offset = 0;
 
     // Write OK
@@ -181,7 +181,8 @@ int handle_list_tasks() {
             memcpy(list_buf + offset, &res_len, 4);
             offset += 4;
 
-            memcpy(list_buf + offset, iterator[i].value, iterator[i].length + 1);
+            memcpy(list_buf + offset, iterator[i].value,
+                   iterator[i].length + 1);
             offset += iterator[i].length + 1;
         }
     }

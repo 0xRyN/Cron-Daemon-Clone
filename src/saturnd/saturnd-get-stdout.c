@@ -24,7 +24,7 @@ int stdout_to_cassini(int hasFailed, int taskDoesntExist, int offset) {
         memcpy(buf, &reptype, 2);
         memcpy(buf + 2, &errcode, 2);
 
-        printf("Writing ERROR to cassini\n");
+        // printf("Writing ERROR to cassini\n");
 
         int w = write(res_fd, buf, 4);
         if (w < 0) {

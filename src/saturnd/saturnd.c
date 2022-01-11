@@ -67,7 +67,7 @@ void setup_self_pipes() {
 
 int main() {
     // Create the daemon
-    // create_daemon();
+    create_daemon();
 
     // Reset umask
     umask(0000);
@@ -104,9 +104,9 @@ int main() {
 
         // There's an error
         if (polled < 0) {
-            printf("A process just ran (SIGCHLD signal recieved)\n");
-            // perror("Poll error");
-            // goto error;
+            // printf("A process just ran (SIGCHLD signal recieved)\n");
+            //  perror("Poll error");
+            //  goto error;
         }
 
         // Timeout

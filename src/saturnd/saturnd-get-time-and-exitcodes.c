@@ -43,8 +43,8 @@ int iterate(int taskid, int off) {
     char *username = get_username();
     for (int i = 1; i <= n; i++) {
         char time_path[256];
-        sprintf(time_path, "/tmp/%s/saturnd/tasks/%i/runs/%i/time",
-                username, taskid, i);
+        sprintf(time_path, "/tmp/%s/saturnd/tasks/%i/runs/%i/time", username,
+                taskid, i);
 
         int time_fd = open(time_path, O_RDONLY);
         if (time_fd < 0) {
@@ -110,7 +110,7 @@ int time_exitcode_to_cassini(int hasFailed, int offset) {
         memcpy(buf, &reptype, 2);
         memcpy(buf, &errcode, 2);
 
-        printf("Writing ERROR to cassini\n");
+        // printf("Writing ERROR to cassini\n");
 
         int w = write(res_fd, buf, 4);
         if (w < 0) {

@@ -23,7 +23,7 @@ int remove_to_cassini(int hasFailed) {
         memcpy(buf, &reptype, 2);
         memcpy(buf, &errcode, 2);
 
-        printf("Writing ERROR to cassini\n");
+        // printf("Writing ERROR to cassini\n");
 
         int w = write(res_fd, buf, 4);
         if (w < 0) {
@@ -40,7 +40,7 @@ int remove_to_cassini(int hasFailed) {
         }
 
         uint16_t reptype = SERVER_REPLY_OK;
-        printf("Writing OK to cassini\n");
+        // printf("Writing OK to cassini\n");
         reptype = htobe16(reptype);
 
         int w = write(res_fd, &reptype, 2);

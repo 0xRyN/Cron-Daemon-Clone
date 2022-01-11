@@ -111,8 +111,7 @@ int handle_operation(char *b) {
             break;
 
         default:
-            printf("Operation is : %x\n", opcode);
-            printf("never ever\n");
+            break;
     }
 
     return 0;
