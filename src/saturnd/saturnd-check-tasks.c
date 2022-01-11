@@ -1,7 +1,5 @@
 #include "saturnd-check-tasks.h"
 
-int run_task(int taskid) {}
-
 int handle_task(int taskid) {
     // Fill the struct timing
     struct timing *tm = malloc(sizeof(struct timing));

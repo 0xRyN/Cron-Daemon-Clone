@@ -10,6 +10,7 @@
 #include "read-files.h"
 #include "run-task.h"
 #include "timing-text-io.h"
+#include "util.h"
 
 int handle_check_tasks();
 

@@ -12,7 +12,7 @@ int get_cur_run(int taskid) {
     }
     struct dirent *entry;
 
-    int max = 0;
+    int max = 1;
 
     while ((entry = readdir(dirp))) {
         // If its not . or ..
@@ -22,14 +22,14 @@ int get_cur_run(int taskid) {
         }
     }
 
-    return max + 1;
+    return max;
 }
 
 int dup_stdout(int taskid) {
     char path[256];
     sprintf(path, "/tmp/%s/saturnd/tasks/%d/stdout", get_username(), taskid);
 
-    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY);
+    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0777);
     if (fd < 0) {
         perror("Opening stdout");
         return -1;
@@ -40,6 +40,8 @@ int dup_stdout(int taskid) {
         perror("dup2 stdout");
         return -1;
     }
+
+    close(fd);
     return 0;
 }
 
@@ -47,7 +49,7 @@ int dup_stderr(int taskid) {
     char path[256];
     sprintf(path, "/tmp/%s/saturnd/tasks/%d/stderr", get_username(), taskid);
 
-    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY);
+    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0777);
     if (fd < 0) {
         perror("Opening stderr");
         return -1;
@@ -58,10 +60,13 @@ int dup_stderr(int taskid) {
         perror("dup2 stderr");
         return -1;
     }
+
+    close(fd);
     return 0;
 }
 
 int log_time(int taskid) {
+    printf("hello\n");
     int cur = get_cur_run(taskid);
     if (cur < 0) {
         perror("Log time - cur runs has failed");
@@ -69,7 +74,8 @@ int log_time(int taskid) {
     }
 
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d", get_username(), taskid);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d", get_username(), taskid,
+            cur);
 
     int res_mkdir = mkdir(path, 0777);
     if (res_mkdir < 0) {
@@ -77,11 +83,13 @@ int log_time(int taskid) {
         return -1;
     }
 
+    printf("hello 2\n");
+
     char path_time[256];
     sprintf(path, "/tmp/%s/saturnd/tasks/%d/runs/%d/time", get_username(),
-            taskid);
+            taskid, cur);
 
-    int fd = open(path_time, O_CREAT | O_WRONLY);
+    int fd = open(path_time, O_CREAT | O_WRONLY, 0777);
     if (fd < 0) {
         perror("open log time");
         return -1;
@@ -109,9 +117,11 @@ int log_exitcode(int taskid, int code) {
 
     char path_exitcode[256];
     sprintf(path_exitcode, "/tmp/%s/saturnd/tasks/%d/runs/%d/exitcode",
-            get_username(), taskid);
+            get_username(), taskid, cur);
 
-    int fd = open(path_exitcode, O_CREAT | O_WRONLY);
+    printf("%s\n", path_exitcode);
+
+    int fd = open(path_exitcode, O_CREAT | O_WRONLY, 0777);
     if (fd < 0) {
         perror("open log exitcode");
         return -1;
@@ -137,7 +147,7 @@ int log_exitcode(int taskid, int code) {
     return 0;
 }
 
-int run(char *cmd, int taskid) {
+int run(char **cmd, int taskid) {
     int pid1 = fork();
     if (pid1 == 0) {  // Son
         int pid2 = fork();
@@ -159,7 +169,7 @@ int run(char *cmd, int taskid) {
                 perror("Log time");
                 return -1;
             }
-            //  execvp
+            execvp(cmd[0], cmd);
         }
 
         else {  // Son
@@ -170,6 +180,7 @@ int run(char *cmd, int taskid) {
         }
     }
     // Do we want to wait here ? NO
+    return 0;
 }
 
 int handle_run_task(int tid) {
@@ -181,7 +192,7 @@ int handle_run_task(int tid) {
     // THE SON WILL WAIT FOR IT'S SON(WHICH WILL RUN THE COMMAND)
 
     char path[256];
-    sprintf(path, "/tmp/%s/saturnd/tasks/%d/command", get_username(), taskid);
+    sprintf(path, "/tmp/%s/saturnd/tasks/%d/command", get_username(), tid);
 
     struct command *cmd = malloc(sizeof(struct command));
     int r = get_command_from_file(cmd, path);
@@ -191,10 +202,14 @@ int handle_run_task(int tid) {
     }
 
     // NEED TO FREE
-    char **command_buf = malloc(cmd->argc * sizeof(char *));
-    for (int i = 0; i < (int)cmd->argc; i++) {
+    char **command_buf = malloc(cmd->argc + 1);
+    int i;
+    for (i = 0; i < (int)cmd->argc; i++) {
         // NEED TO FREE
-        command_buf[i] = malloc(cmd->argv[i].length);
-        strcat(command_buf[i], cmd->argv[i].value);
+        command_buf[i] = malloc(cmd->argv[i].length + 1);
+        strncpy(command_buf[i], cmd->argv[i].value, cmd->argv[i].length);
     }
+    command_buf[i] = NULL;
+
+    return run(command_buf, tid);
 }
