@@ -41,7 +41,7 @@ int handle_check_tasks() {
     while ((entry = readdir(dirp))) {
         // If its not . or ..
         if ((entry->d_name)[0] != '.') {
-            return handle_task(strtol((entry->d_name), NULL, 10));
+            handle_task(strtol((entry->d_name), NULL, 10));
         }
     }
 

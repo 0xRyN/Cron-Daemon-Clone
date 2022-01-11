@@ -176,6 +176,7 @@ int run(char **cmd, int taskid) {
             log_exitcode(taskid, exitcode);
             exit(0);
         }
+        exit(0);
     }
     // Do we want to wait here ? NO
     return 0;
