@@ -121,7 +121,7 @@ int main() {
                 perror("handle check tasks");
                 return -1;
             }*/
-            handle_run_task(1);
+            handle_run_task(5);
         }
 
         // One or more fds recieved an event
